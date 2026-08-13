@@ -3,10 +3,493 @@ const AIRPORT_API =
 
 
 /* =========================================================
-   GLOBAL GLOBE
+   GLOBAL STATE
    ========================================================= */
 
 let globeViewer = null;
+
+let departureAirport = null;
+
+let destinationAirport = null;
+
+let routeWaypoints = [];
+
+let routeAirports = [];
+
+let currentPerformance = null;
+
+
+/* =========================================================
+   AIRCRAFT DATABASE
+   =========================================================
+
+   These are SIMULATION PROFILES.
+
+   They are intentionally kept separate from the route engine
+   so we can later replace them with detailed aircraft-specific
+   performance datasets.
+   ========================================================= */
+
+const AIRCRAFT_DATABASE = {
+
+    a320: {
+
+        name:
+            "Airbus A320-200",
+
+        oew:
+            42600,
+
+        mtow:
+            78000,
+
+        mlw:
+            66000,
+
+        mzfw:
+            62500,
+
+        maxFuel:
+            24210,
+
+        cruiseSpeed:
+            450,
+
+        referenceTakeoffWeight:
+            70000,
+
+        referenceLandingWeight:
+            60000,
+
+        referenceV1:
+            135,
+
+        referenceVR:
+            140,
+
+        referenceV2:
+            145,
+
+        referenceVref:
+            137,
+
+        takeoffFlaps:
+            "CONF 1+F / CONF 2",
+
+        landingFlaps:
+            "FULL",
+
+        flapOptions:
+            [
+                "CONF 1+F",
+                "CONF 2",
+                "CONF 3"
+            ]
+
+    },
+
+
+    a320neo: {
+
+        name:
+            "Airbus A320neo",
+
+        oew:
+            44600,
+
+        mtow:
+            79000,
+
+        mlw:
+            67400,
+
+        mzfw:
+            62800,
+
+        maxFuel:
+            24210,
+
+        cruiseSpeed:
+            450,
+
+        referenceTakeoffWeight:
+            71000,
+
+        referenceLandingWeight:
+            61000,
+
+        referenceV1:
+            137,
+
+        referenceVR:
+            142,
+
+        referenceV2:
+            147,
+
+        referenceVref:
+            139,
+
+        takeoffFlaps:
+            "CONF 1+F / CONF 2",
+
+        landingFlaps:
+            "FULL",
+
+        flapOptions:
+            [
+                "CONF 1+F",
+                "CONF 2",
+                "CONF 3"
+            ]
+
+    },
+
+
+    a321: {
+
+        name:
+            "Airbus A321",
+
+        oew:
+            51500,
+
+        mtow:
+            89000,
+
+        mlw:
+            75500,
+
+        mzfw:
+            73800,
+
+        maxFuel:
+            32000,
+
+        cruiseSpeed:
+            450,
+
+        referenceTakeoffWeight:
+            80000,
+
+        referenceLandingWeight:
+            68000,
+
+        referenceV1:
+            140,
+
+        referenceVR:
+            145,
+
+        referenceV2:
+            150,
+
+        referenceVref:
+            143,
+
+        takeoffFlaps:
+            "CONF 1+F / CONF 2",
+
+        landingFlaps:
+            "FULL",
+
+        flapOptions:
+            [
+                "CONF 1+F",
+                "CONF 2",
+                "CONF 3"
+            ]
+
+    },
+
+
+    b738: {
+
+        name:
+            "Boeing 737-800",
+
+        oew:
+            41400,
+
+        mtow:
+            79010,
+
+        mlw:
+            66360,
+
+        mzfw:
+            62730,
+
+        maxFuel:
+            26020,
+
+        cruiseSpeed:
+            450,
+
+        referenceTakeoffWeight:
+            70000,
+
+        referenceLandingWeight:
+            60000,
+
+        referenceV1:
+            135,
+
+        referenceVR:
+            138,
+
+        referenceV2:
+            145,
+
+        referenceVref:
+            137,
+
+        takeoffFlaps:
+            "5",
+
+        landingFlaps:
+            "30",
+
+        flapOptions:
+            [
+                "1",
+                "5",
+                "10",
+                "15"
+            ]
+
+    },
+
+
+    b38m: {
+
+        name:
+            "Boeing 737 MAX 8",
+
+        oew:
+            44670,
+
+        mtow:
+            82190,
+
+        mlw:
+            69310,
+
+        mzfw:
+            65320,
+
+        maxFuel:
+            25940,
+
+        cruiseSpeed:
+            453,
+
+        referenceTakeoffWeight:
+            73000,
+
+        referenceLandingWeight:
+            62000,
+
+        referenceV1:
+            138,
+
+        referenceVR:
+            141,
+
+        referenceV2:
+            147,
+
+        referenceVref:
+            140,
+
+        takeoffFlaps:
+            "5",
+
+        landingFlaps:
+            "30",
+
+        flapOptions:
+            [
+                "1",
+                "5",
+                "10",
+                "15"
+            ]
+
+    },
+
+
+    b789: {
+
+        name:
+            "Boeing 787-9",
+
+        oew:
+            128000,
+
+        mtow:
+            254000,
+
+        mlw:
+            192800,
+
+        mzfw:
+            181000,
+
+        maxFuel:
+            126000,
+
+        cruiseSpeed:
+            488,
+
+        referenceTakeoffWeight:
+            220000,
+
+        referenceLandingWeight:
+            175000,
+
+        referenceV1:
+            145,
+
+        referenceVR:
+            150,
+
+        referenceV2:
+            158,
+
+        referenceVref:
+            145,
+
+        takeoffFlaps:
+            "5",
+
+        landingFlaps:
+            "FULL",
+
+        flapOptions:
+            [
+                "5",
+                "10",
+                "15"
+            ]
+
+    },
+
+
+    b77w: {
+
+        name:
+            "Boeing 777-300ER",
+
+        oew:
+            167800,
+
+        mtow:
+            351500,
+
+        mlw:
+            251290,
+
+        mzfw:
+            237680,
+
+        maxFuel:
+            181280,
+
+        cruiseSpeed:
+            490,
+
+        referenceTakeoffWeight:
+            300000,
+
+        referenceLandingWeight:
+            220000,
+
+        referenceV1:
+            145,
+
+        referenceVR:
+            150,
+
+        referenceV2:
+            158,
+
+        referenceVref:
+            145,
+
+        takeoffFlaps:
+            "5",
+
+        landingFlaps:
+            "30",
+
+        flapOptions:
+            [
+                "5",
+                "15",
+                "20"
+            ]
+
+    },
+
+
+    a359: {
+
+        name:
+            "Airbus A350-900",
+
+        oew:
+            142400,
+
+        mtow:
+            283000,
+
+        mlw:
+            207000,
+
+        mzfw:
+            195000,
+
+        maxFuel:
+            141000,
+
+        cruiseSpeed:
+            488,
+
+        referenceTakeoffWeight:
+            250000,
+
+        referenceLandingWeight:
+            195000,
+
+        referenceV1:
+            145,
+
+        referenceVR:
+            150,
+
+        referenceV2:
+            158,
+
+        referenceVref:
+            145,
+
+        takeoffFlaps:
+            "CONF 1",
+
+        landingFlaps:
+            "FULL",
+
+        flapOptions:
+            [
+                "CONF 1",
+                "CONF 2",
+                "CONF 3"
+            ]
+
+    }
+
+};
 
 
 /* =========================================================
@@ -15,35 +498,58 @@ let globeViewer = null;
 
 async function findAirport(code) {
 
-    code = code.trim().toUpperCase();
+    code =
+        code
+            .trim()
+            .toUpperCase();
+
 
     try {
 
-        const response = await fetch(
-            `${AIRPORT_API}/${encodeURIComponent(code)}`
-        );
+        const response =
+            await fetch(
+                `${AIRPORT_API}/${encodeURIComponent(code)}`
+            );
+
 
         if (!response.ok) {
+
             console.error(
                 "API HTTP error:",
                 response.status
             );
+
             return null;
         }
 
-        const raw = await response.json();
 
-        console.log("RAW API:", raw);
+        const raw =
+            await response.json();
 
-        if (!raw.data || !raw.data.attributes) {
+
+        console.log(
+            "RAW API:",
+            raw
+        );
+
+
+        if (
+            !raw.data ||
+            !raw.data.attributes
+        ) {
+
             console.error(
                 "Unexpected API structure:",
                 raw
             );
+
             return null;
         }
 
-        const a = raw.data.attributes;
+
+        const a =
+            raw.data.attributes;
+
 
         const airport = {
 
@@ -68,14 +574,18 @@ async function findAirport(code) {
 
             elevation:
                 Number(a.elevation) || 0
+
         };
+
 
         console.log(
             "NORMALIZED AIRPORT:",
             airport
         );
 
+
         return airport;
+
 
     } catch (error) {
 
@@ -84,8 +594,10 @@ async function findAirport(code) {
             error
         );
 
+
         return null;
     }
+
 }
 
 
@@ -100,25 +612,51 @@ function calculateDistance(
     lon2
 ) {
 
-    const R = 3440.065;
+    const R =
+        3440.065;
+
 
     const φ1 =
-        lat1 * Math.PI / 180;
+        lat1 *
+        Math.PI /
+        180;
+
 
     const φ2 =
-        lat2 * Math.PI / 180;
+        lat2 *
+        Math.PI /
+        180;
+
 
     const Δφ =
-        (lat2 - lat1) * Math.PI / 180;
+        (
+            lat2 -
+            lat1
+        ) *
+        Math.PI /
+        180;
+
 
     const Δλ =
-        (lon2 - lon1) * Math.PI / 180;
+        (
+            lon2 -
+            lon1
+        ) *
+        Math.PI /
+        180;
+
 
     const a =
-        Math.sin(Δφ / 2) ** 2 +
+        Math.sin(
+            Δφ / 2
+        ) ** 2 +
+
         Math.cos(φ1) *
         Math.cos(φ2) *
-        Math.sin(Δλ / 2) ** 2;
+        Math.sin(
+            Δλ / 2
+        ) ** 2;
+
 
     const c =
         2 *
@@ -126,6 +664,7 @@ function calculateDistance(
             Math.sqrt(a),
             Math.sqrt(1 - a)
         );
+
 
     return R * c;
 }
@@ -143,28 +682,52 @@ function calculateInitialBearing(
 ) {
 
     const φ1 =
-        lat1 * Math.PI / 180;
+        lat1 *
+        Math.PI /
+        180;
+
 
     const φ2 =
-        lat2 * Math.PI / 180;
+        lat2 *
+        Math.PI /
+        180;
+
 
     const Δλ =
-        (lon2 - lon1) * Math.PI / 180;
+        (
+            lon2 -
+            lon1
+        ) *
+        Math.PI /
+        180;
+
 
     const y =
-        Math.sin(Δλ) * Math.cos(φ2);
+        Math.sin(Δλ) *
+        Math.cos(φ2);
+
 
     const x =
-        Math.cos(φ1) * Math.sin(φ2) -
+        Math.cos(φ1) *
+        Math.sin(φ2) -
+
         Math.sin(φ1) *
         Math.cos(φ2) *
         Math.cos(Δλ);
 
-    const θ =
-        Math.atan2(y, x) *
-        180 / Math.PI;
 
-    return normalizeBearing(θ);
+    const θ =
+        Math.atan2(
+            y,
+            x
+        ) *
+        180 /
+        Math.PI;
+
+
+    return normalizeBearing(
+        θ
+    );
 }
 
 
@@ -181,14 +744,19 @@ function calculateFinalBearing(
 
     const reverseBearing =
         calculateInitialBearing(
+
             lat2,
             lon2,
+
             lat1,
             lon1
+
         );
 
+
     return normalizeBearing(
-        reverseBearing + 180
+        reverseBearing +
+        180
     );
 }
 
@@ -202,7 +770,8 @@ function normalizeBearing(
 ) {
 
     return (
-        bearing + 360
+        bearing +
+        360
     ) % 360;
 }
 
@@ -220,33 +789,52 @@ function generateGreatCirclePoints(
 ) {
 
     const φ1 =
-        lat1 * Math.PI / 180;
+        lat1 *
+        Math.PI /
+        180;
+
 
     const λ1 =
-        lon1 * Math.PI / 180;
+        lon1 *
+        Math.PI /
+        180;
+
 
     const φ2 =
-        lat2 * Math.PI / 180;
+        lat2 *
+        Math.PI /
+        180;
+
 
     const λ2 =
-        lon2 * Math.PI / 180;
+        lon2 *
+        Math.PI /
+        180;
 
 
     const sinHalfLat =
         Math.sin(
-            (φ2 - φ1) / 2
+            (φ2 - φ1) /
+            2
         );
+
 
     const sinHalfLon =
         Math.sin(
-            (λ2 - λ1) / 2
+            (λ2 - λ1) /
+            2
         );
 
+
     const a =
-        sinHalfLat * sinHalfLat +
+        sinHalfLat *
+        sinHalfLat +
+
         Math.cos(φ1) *
         Math.cos(φ2) *
-        sinHalfLon * sinHalfLon;
+        sinHalfLon *
+        sinHalfLon;
+
 
     const δ =
         2 *
@@ -256,12 +844,18 @@ function generateGreatCirclePoints(
         );
 
 
-    if (δ < 1e-10) {
+    if (
+        δ <
+        1e-10
+    ) {
 
         return [
             {
-                latitude: lat1,
-                longitude: lon1
+                latitude:
+                    lat1,
+
+                longitude:
+                    lon1
             }
         ];
     }
@@ -277,20 +871,28 @@ function generateGreatCirclePoints(
     ) {
 
         const fraction =
-            i / numberOfPoints;
+            i /
+            numberOfPoints;
+
 
         const sinδ =
             Math.sin(δ);
 
+
         const A =
             Math.sin(
-                (1 - fraction) * δ
-            ) / sinδ;
+                (1 - fraction) *
+                δ
+            ) /
+            sinδ;
+
 
         const B =
             Math.sin(
-                fraction * δ
-            ) / sinδ;
+                fraction *
+                δ
+            ) /
+            sinδ;
 
 
         const x =
@@ -341,12 +943,17 @@ function generateGreatCirclePoints(
         points.push({
 
             latitude:
-                φ * 180 / Math.PI,
+                φ *
+                180 /
+                Math.PI,
 
             longitude:
-                λ * 180 / Math.PI
+                λ *
+                180 /
+                Math.PI
 
         });
+
     }
 
 
@@ -384,120 +991,1217 @@ function displayAirport(
 
 
 /* =========================================================
-   INITIALIZE 3D GLOBE
+   AIRCRAFT INFORMATION
    ========================================================= */
 
-function initializeGlobe() {
+function getSelectedAircraft() {
 
-    try {
-
-        globeViewer =
-            new Cesium.Viewer(
-                "cesiumContainer",
-                {
-
-                    animation:
-                        false,
-
-                    timeline:
-                        false,
-
-                    baseLayerPicker:
-                        false,
-
-                    geocoder:
-                        false,
-
-                    homeButton:
-                        false,
-
-                    sceneModePicker:
-                        false,
-
-                    navigationHelpButton:
-                        false,
-
-                    fullscreenButton:
-                        false,
-
-                    vrButton:
-                        false,
-
-                    infoBox:
-                        true,
-
-                    selectionIndicator:
-                        true,
-
-                    terrainProvider:
-                        new Cesium.EllipsoidTerrainProvider()
-                }
-            );
+    const aircraftId =
+        document.getElementById(
+            "aircraft"
+        ).value;
 
 
-        globeViewer.imageryLayers.removeAll();
+    return AIRCRAFT_DATABASE[
+        aircraftId
+    ];
+}
 
 
-        const osm =
-            new Cesium.OpenStreetMapImageryProvider({
+function updateAircraftInformation() {
 
-                url:
-                    "https://tile.openstreetmap.org/"
-
-            });
+    const aircraft =
+        getSelectedAircraft();
 
 
-        globeViewer.imageryLayers.addImageryProvider(
-            osm
-        );
+    if (!aircraft) {
+        return;
+    }
 
 
-        globeViewer.scene.globe.enableLighting =
-            true;
+    document.getElementById(
+        "aircraftHint"
+    ).textContent =
+        `${aircraft.name} • ` +
+        `OEW ${formatKg(aircraft.oew)} • ` +
+        `MTOW ${formatKg(aircraft.mtow)} • ` +
+        `Max fuel ${formatKg(aircraft.maxFuel)} • ` +
+        `Cruise ${aircraft.cruiseSpeed} KT`;
+}
 
 
-        globeViewer.scene.globe.depthTestAgainstTerrain =
-            false;
+/* =========================================================
+   FORMAT HELPERS
+   ========================================================= */
+
+function formatKg(
+    value
+) {
+
+    return `${Math.round(value).toLocaleString()} kg`;
+}
 
 
-        globeViewer.camera.setView({
+function formatNm(
+    value
+) {
 
-            destination:
-                Cesium.Cartesian3.fromDegrees(
-                    78,
-                    20,
-                    15000000
-                )
-
-        });
+    return `${Math.round(value).toLocaleString()} NM`;
+}
 
 
-        console.log(
-            "V1 Flight Planner - 3D globe initialized"
-        );
+function formatKnots(
+    value
+) {
+
+    return `${Math.round(value)} KT`;
+}
 
 
-    } catch (error) {
+function clamp(
+    value,
+    minimum,
+    maximum
+) {
 
-        console.error(
-            "Globe initialization failed:",
-            error
-        );
+    return Math.min(
+        Math.max(
+            value,
+            minimum
+        ),
+        maximum
+    );
+}
 
 
-        const globeStatus =
+/* =========================================================
+   PERFORMANCE ESTIMATE
+   ========================================================= */
+
+function calculatePerformance() {
+
+    const aircraft =
+        getSelectedAircraft();
+
+
+    if (!aircraft) {
+        return;
+    }
+
+
+    let payload =
+        Number(
             document.getElementById(
-                "globeStatus"
+                "payload"
+            ).value
+        );
+
+
+    let fuel =
+        Number(
+            document.getElementById(
+                "fuelLoad"
+            ).value
+        );
+
+
+    if (
+        !Number.isFinite(payload) ||
+        payload < 0
+    ) {
+
+        payload = 0;
+
+        document.getElementById(
+            "payload"
+        ).value = 0;
+    }
+
+
+    if (
+        !Number.isFinite(fuel) ||
+        fuel < 0
+    ) {
+
+        fuel = 0;
+
+        document.getElementById(
+            "fuelLoad"
+        ).value = 0;
+    }
+
+
+    /*
+     Prevent the input from exceeding
+     the aircraft's maximum fuel.
+     */
+
+    fuel =
+        clamp(
+            fuel,
+            0,
+            aircraft.maxFuel
+        );
+
+
+    document.getElementById(
+        "fuelLoad"
+    ).value =
+        fuel;
+
+
+    const zfw =
+        aircraft.oew +
+        payload;
+
+
+    const tow =
+        zfw +
+        fuel;
+
+
+    /*
+     The planner does not yet have a real
+     fuel-burn model. Therefore landing
+     weight is estimated using a simple
+     planning reserve/burn assumption.
+     */
+
+    const estimatedTripFuel =
+        fuel *
+        0.85;
+
+
+    const landingWeight =
+        tow -
+        estimatedTripFuel;
+
+
+    /*
+     Update weight display.
+     */
+
+    document.getElementById(
+        "oew"
+    ).textContent =
+        formatKg(
+            aircraft.oew
+        );
+
+
+    document.getElementById(
+        "payloadDisplay"
+    ).textContent =
+        formatKg(
+            payload
+        );
+
+
+    document.getElementById(
+        "zfw"
+    ).textContent =
+        formatKg(
+            zfw
+        );
+
+
+    document.getElementById(
+        "fuelDisplay"
+    ).textContent =
+        formatKg(
+            fuel
+        );
+
+
+    document.getElementById(
+        "tow"
+    ).textContent =
+        formatKg(
+            tow
+        );
+
+
+    document.getElementById(
+        "landingWeight"
+    ).textContent =
+        formatKg(
+            landingWeight
+        );
+
+
+    /*
+     Update limits.
+     */
+
+    document.getElementById(
+        "mtow"
+    ).textContent =
+        formatKg(
+            aircraft.mtow
+        );
+
+
+    document.getElementById(
+        "mlw"
+    ).textContent =
+        formatKg(
+            aircraft.mlw
+        );
+
+
+    document.getElementById(
+        "mzfw"
+    ).textContent =
+        formatKg(
+            aircraft.mzfw
+        );
+
+
+    document.getElementById(
+        "maxFuel"
+    ).textContent =
+        formatKg(
+            aircraft.maxFuel
+        );
+
+
+    /*
+     Weight-limit validation.
+     */
+
+    const zfwElement =
+        document.getElementById(
+            "zfw"
+        );
+
+
+    const towElement =
+        document.getElementById(
+            "tow"
+        );
+
+
+    const landingElement =
+        document.getElementById(
+            "landingWeight"
+        );
+
+
+    zfwElement.className =
+        "performance-value " +
+        (
+            zfw <= aircraft.mzfw
+                ? "status-good"
+                : "status-danger"
+        );
+
+
+    towElement.className =
+        "performance-value " +
+        (
+            tow <= aircraft.mtow
+                ? "status-good"
+                : "status-danger"
+        );
+
+
+    landingElement.className =
+        "performance-value " +
+        (
+            landingWeight <= aircraft.mlw
+                ? "status-good"
+                : "status-danger"
+        );
+
+
+    /*
+     Calculate SIM ESTIMATE V-speeds.
+
+     Speed varies approximately with the square
+     root of weight ratio in this simplified model.
+
+     This is deliberately NOT presented as
+     certified aircraft performance.
+     */
+
+    const takeoffWeightRatio =
+        Math.sqrt(
+            tow /
+            aircraft.referenceTakeoffWeight
+        );
+
+
+    const landingWeightRatio =
+        Math.sqrt(
+            landingWeight /
+            aircraft.referenceLandingWeight
+        );
+
+
+    const v1 =
+        aircraft.referenceV1 *
+        takeoffWeightRatio;
+
+
+    const vr =
+        aircraft.referenceVR *
+        takeoffWeightRatio;
+
+
+    const v2 =
+        aircraft.referenceV2 *
+        takeoffWeightRatio;
+
+
+    const vref =
+        aircraft.referenceVref *
+        landingWeightRatio;
+
+
+    const vapp =
+        vref +
+        5;
+
+
+    /*
+     Store performance.
+     */
+
+    currentPerformance = {
+
+        aircraft:
+            aircraft,
+
+        payload:
+            payload,
+
+        fuel:
+            fuel,
+
+        zfw:
+            zfw,
+
+        tow:
+            tow,
+
+        landingWeight:
+            landingWeight,
+
+        v1:
+            v1,
+
+        vr:
+            vr,
+
+        v2:
+            v2,
+
+        vref:
+            vref,
+
+        vapp:
+            vapp
+
+    };
+
+
+    /*
+     Display takeoff performance.
+     */
+
+    document.getElementById(
+        "takeoffFlaps"
+    ).textContent =
+        aircraft.takeoffFlaps;
+
+
+    document.getElementById(
+        "v1"
+    ).textContent =
+        formatKnots(v1);
+
+
+    document.getElementById(
+        "vr"
+    ).textContent =
+        formatKnots(vr);
+
+
+    document.getElementById(
+        "v2"
+    ).textContent =
+        formatKnots(v2);
+
+
+    /*
+     Display landing performance.
+     */
+
+    document.getElementById(
+        "landingFlaps"
+    ).textContent =
+        aircraft.landingFlaps;
+
+
+    document.getElementById(
+        "vref"
+    ).textContent =
+        formatKnots(vref);
+
+
+    document.getElementById(
+        "vapp"
+    ).textContent =
+        formatKnots(vapp);
+
+
+    /*
+     Show a warning if the selected
+     weight exceeds an aircraft limit.
+     */
+
+    const warnings = [];
+
+
+    if (
+        zfw >
+        aircraft.mzfw
+    ) {
+
+        warnings.push(
+            "ZFW exceeds MZFW."
+        );
+
+    }
+
+
+    if (
+        tow >
+        aircraft.mtow
+    ) {
+
+        warnings.push(
+            "Takeoff weight exceeds MTOW."
+        );
+
+    }
+
+
+    if (
+        landingWeight >
+        aircraft.mlw
+    ) {
+
+        warnings.push(
+            "Estimated landing weight exceeds MLW."
+        );
+
+    }
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+
+    if (warnings.length > 0) {
+
+        status.textContent =
+            `Weight warning: ${warnings.join(" ")}`;
+
+    } else {
+
+        status.textContent =
+            "Performance estimate calculated successfully.";
+
+    }
+
+
+    /*
+     Refresh aircraft description.
+     */
+
+    updateAircraftInformation();
+
+}
+
+
+/* =========================================================
+   WAYPOINT TABLE
+   ========================================================= */
+
+function addWaypoint() {
+
+    routeWaypoints.push({
+
+        code:
+            "",
+
+        altitude:
+            10000,
+
+        speed:
+            250,
+
+        speedUnit:
+            "IAS",
+
+        airport:
+            null
+
+    });
+
+
+    renderWaypointTable();
+}
+
+
+function removeWaypoint(
+    index
+) {
+
+    if (
+        index < 0 ||
+        index >= routeWaypoints.length
+    ) {
+
+        return;
+    }
+
+
+    routeWaypoints.splice(
+        index,
+        1
+    );
+
+
+    renderWaypointTable();
+}
+
+
+function renderWaypointTable() {
+
+    const tbody =
+        document.getElementById(
+            "waypointTableBody"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyRoute"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    if (
+        routeWaypoints.length === 0
+    ) {
+
+        empty.style.display =
+            "block";
+
+        return;
+    }
+
+
+    empty.style.display =
+        "none";
+
+
+    routeWaypoints.forEach(
+        (waypoint, index) => {
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            row.innerHTML = `
+
+                <td class="waypoint-number">
+                    ${index + 1}
+                </td>
+
+                <td>
+                    <input
+                        type="text"
+                        maxlength="5"
+                        value="${waypoint.code}"
+                        placeholder="DPN"
+                        oninput="updateWaypointField(
+                            ${index},
+                            'code',
+                            this.value
+                        )"
+                    >
+                </td>
+
+                <td>
+                    <input
+                        type="number"
+                        min="0"
+                        step="500"
+                        value="${waypoint.altitude}"
+                        oninput="updateWaypointField(
+                            ${index},
+                            'altitude',
+                            this.value
+                        )"
+                    >
+                </td>
+
+                <td>
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value="${waypoint.speed}"
+                        oninput="updateWaypointField(
+                            ${index},
+                            'speed',
+                            this.value
+                        )"
+                    >
+                </td>
+
+                <td>
+                    <select
+                        onchange="updateWaypointField(
+                            ${index},
+                            'speedUnit',
+                            this.value
+                        )"
+                    >
+
+                        <option
+                            value="IAS"
+                            ${waypoint.speedUnit === "IAS"
+                                ? "selected"
+                                : ""}
+                        >
+                            IAS
+                        </option>
+
+                        <option
+                            value="MACH"
+                            ${waypoint.speedUnit === "MACH"
+                                ? "selected"
+                                : ""}
+                        >
+                            Mach
+                        </option>
+
+                    </select>
+                </td>
+
+                <td class="waypoint-distance"
+                    id="legDistance-${index}">
+                    —
+                </td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="danger"
+                        onclick="removeWaypoint(${index})"
+                    >
+                        REMOVE
+                    </button>
+                </td>
+            `;
+
+
+            tbody.appendChild(
+                row
             );
-
-
-        if (globeStatus) {
-
-            globeStatus.textContent =
-                "3D globe failed to initialize.";
 
         }
+    );
+}
+
+
+function updateWaypointField(
+    index,
+    field,
+    value
+) {
+
+    if (
+        !routeWaypoints[index]
+    ) {
+
+        return;
     }
+
+
+    if (
+        field === "altitude" ||
+        field === "speed"
+    ) {
+
+        routeWaypoints[index][field] =
+            Number(value);
+
+    } else {
+
+        routeWaypoints[index][field] =
+            value
+                .toString()
+                .toUpperCase();
+
+    }
+}
+
+
+/* =========================================================
+   BUILD ROUTE
+   ========================================================= */
+
+async function updateRoute() {
+
+    const departureCode =
+        document.getElementById(
+            "departure"
+        ).value
+        .trim()
+        .toUpperCase();
+
+
+    const destinationCode =
+        document.getElementById(
+            "destination"
+        ).value
+        .trim()
+        .toUpperCase();
+
+
+    if (
+        !departureCode ||
+        !destinationCode
+    ) {
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Enter departure and destination before updating the route.";
+
+        return;
+    }
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+
+    status.textContent =
+        "Building route...";
+
+
+    /*
+     Look up departure and destination.
+     */
+
+    const [
+        departure,
+        destination
+    ] =
+        await Promise.all([
+
+            findAirport(
+                departureCode
+            ),
+
+            findAirport(
+                destinationCode
+            )
+
+        ]);
+
+
+    if (!departure) {
+
+        status.textContent =
+            `Could not find ${departureCode}.`;
+
+        return;
+    }
+
+
+    if (!destination) {
+
+        status.textContent =
+            `Could not find ${destinationCode}.`;
+
+        return;
+    }
+
+
+    departureAirport =
+        departure;
+
+
+    destinationAirport =
+        destination;
+
+
+    /*
+     Resolve waypoint airport coordinates.
+     */
+
+    for (
+        let i = 0;
+        i < routeWaypoints.length;
+        i++
+    ) {
+
+        const waypoint =
+            routeWaypoints[i];
+
+
+        if (
+            !waypoint.code
+        ) {
+
+            waypoint.airport =
+                null;
+
+            continue;
+        }
+
+
+        status.textContent =
+            `Looking up waypoint ${waypoint.code}...`;
+
+
+        waypoint.airport =
+            await findAirport(
+                waypoint.code
+            );
+
+
+        if (
+            !waypoint.airport
+        ) {
+
+            status.textContent =
+                `Could not find waypoint ${waypoint.code}.`;
+
+            return;
+        }
+    }
+
+
+    /*
+     Construct complete route.
+     */
+
+    routeAirports = [
+
+        departure,
+
+        ...routeWaypoints
+            .filter(
+                waypoint =>
+                    waypoint.airport
+            )
+            .map(
+                waypoint =>
+                    waypoint.airport
+            ),
+
+        destination
+
+    ];
+
+
+    /*
+     Calculate leg distances.
+     */
+
+    let totalDistance =
+        0;
+
+
+    for (
+        let i = 0;
+        i < routeAirports.length - 1;
+        i++
+    ) {
+
+        const from =
+            routeAirports[i];
+
+
+        const to =
+            routeAirports[i + 1];
+
+
+        const distance =
+            calculateDistance(
+
+                from.latitude,
+                from.longitude,
+
+                to.latitude,
+                to.longitude
+
+            );
+
+
+        totalDistance +=
+            distance;
+
+
+        /*
+         The waypoint's leg distance represents
+         the distance from the previous point.
+         */
+
+        const waypointIndex =
+            i - 1;
+
+
+        if (
+            waypointIndex >= 0 &&
+            routeWaypoints[waypointIndex]
+        ) {
+
+            const element =
+                document.getElementById(
+                    `legDistance-${waypointIndex}`
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    formatNm(
+                        distance
+                    );
+
+            }
+        }
+    }
+
+
+    /*
+     Render route information.
+     */
+
+    document.getElementById(
+        "routeDeparture"
+    ).textContent =
+        departure.code;
+
+
+    document.getElementById(
+        "routeDestination"
+    ).textContent =
+        destination.code;
+
+
+    document.getElementById(
+        "distance"
+    ).textContent =
+        formatNm(
+            totalDistance
+        );
+
+
+    /*
+     Initial bearing is from first point
+     to first route point/destination.
+     */
+
+    const firstTarget =
+        routeAirports.length > 1
+            ? routeAirports[1]
+            : destination;
+
+
+    const lastOrigin =
+        routeAirports.length > 1
+            ? routeAirports[
+                routeAirports.length - 2
+              ]
+            : departure;
+
+
+    const initialBearing =
+        calculateInitialBearing(
+
+            departure.latitude,
+            departure.longitude,
+
+            firstTarget.latitude,
+            firstTarget.longitude
+
+        );
+
+
+    const finalBearing =
+        calculateFinalBearing(
+
+            lastOrigin.latitude,
+            lastOrigin.longitude,
+
+            destination.latitude,
+            destination.longitude
+
+        );
+
+
+    document.getElementById(
+        "initialBearing"
+    ).textContent =
+        `${Math.round(initialBearing)
+            .toString()
+            .padStart(3, "0")}°`;
+
+
+    document.getElementById(
+        "finalBearing"
+    ).textContent =
+        `${Math.round(finalBearing)
+            .toString()
+            .padStart(3, "0")}°`;
+
+
+    /*
+     Show results.
+     */
+
+    displayAirport(
+        departure,
+        "dep"
+    );
+
+
+    displayAirport(
+        destination,
+        "dest"
+    );
+
+
+    document.getElementById(
+        "result"
+    ).style.display =
+        "block";
+
+
+    /*
+     Draw the route through all waypoints.
+     */
+
+    drawMultiPointRoute(
+        routeAirports
+    );
+
+
+    /*
+     Calculate approximate flight time.
+     */
+
+    calculateEstimatedTime(
+        routeAirports
+    );
+
+
+    status.textContent =
+        "Route updated successfully.";
+}
+
+
+/* =========================================================
+   ESTIMATED TIME
+   ========================================================= */
+
+function calculateEstimatedTime(
+    airports
+) {
+
+    if (
+        airports.length < 2
+    ) {
+
+        return;
+    }
+
+
+    const aircraft =
+        getSelectedAircraft();
+
+
+    if (!aircraft) {
+        return;
+    }
+
+
+    let totalDistance =
+        0;
+
+
+    for (
+        let i = 0;
+        i < airports.length - 1;
+        i++
+    ) {
+
+        totalDistance +=
+            calculateDistance(
+
+                airports[i].latitude,
+                airports[i].longitude,
+
+                airports[i + 1].latitude,
+                airports[i + 1].longitude
+
+            );
+
+    }
+
+
+    /*
+     Cruise-speed estimate.
+
+     We deliberately use a simple average
+     speed for now. A future version will
+     calculate climb, cruise and descent
+     segments separately.
+     */
+
+    const hours =
+        totalDistance /
+        aircraft.cruiseSpeed;
+
+
+    const wholeHours =
+        Math.floor(
+            hours
+        );
+
+
+    const minutes =
+        Math.round(
+            (
+                hours -
+                wholeHours
+            ) *
+            60
+        );
+
+
+    document.getElementById(
+        "estimatedTime"
+    ).textContent =
+        `${wholeHours}h ${minutes}m`;
 }
 
 
@@ -529,16 +2233,22 @@ function addAirportMarker(
                 <strong>${airport.code}</strong><br>
                 ${airport.name}<br>
                 ${airport.iata || "No IATA"}<br>
-                Elevation: ${airport.elevation} ft
+                Elevation:
+                ${airport.elevation} ft
             </div>
             `,
 
 
         position:
+
             Cesium.Cartesian3.fromDegrees(
+
                 airport.longitude,
+
                 airport.latitude,
+
                 15000
+
             ),
 
 
@@ -558,7 +2268,6 @@ function addAirportMarker(
 
             heightReference:
                 Cesium.HeightReference.NONE
-
         },
 
 
@@ -594,17 +2303,137 @@ function addAirportMarker(
         }
 
     });
-
 }
 
 
 /* =========================================================
-   DRAW FLIGHT ROUTE
+   DRAW WAYPOINT MARKER
    ========================================================= */
 
-function drawFlightRoute(
-    departure,
-    destination
+function addWaypointMarker(
+    airport,
+    waypoint,
+    index,
+    routeHeight
+) {
+
+    if (!globeViewer) {
+        return;
+    }
+
+
+    globeViewer.entities.add({
+
+        name:
+            waypoint.code,
+
+
+        description:
+
+            `
+            <div style="font-family:Arial,sans-serif;">
+
+                <strong>
+                    ${waypoint.code}
+                </strong>
+
+                <br>
+
+                Altitude:
+                ${Number(waypoint.altitude || 0).toLocaleString()}
+                ft
+
+                <br>
+
+                Speed:
+                ${waypoint.speed || "—"}
+                ${waypoint.speedUnit || "IAS"}
+
+                <br>
+
+                Latitude:
+                ${airport.latitude.toFixed(4)}°
+
+                <br>
+
+                Longitude:
+                ${airport.longitude.toFixed(4)}°
+
+            </div>
+            `,
+
+
+        position:
+
+            Cesium.Cartesian3.fromDegrees(
+
+                airport.longitude,
+
+                airport.latitude,
+
+                routeHeight
+
+            ),
+
+
+        point: {
+
+            pixelSize:
+                8,
+
+            color:
+                Cesium.Color.ORANGE,
+
+            outlineColor:
+                Cesium.Color.WHITE,
+
+            outlineWidth:
+                2
+
+        },
+
+
+        label: {
+
+            text:
+                `${index + 1}. ${waypoint.code}`,
+
+            font:
+                "bold 14px Arial",
+
+            fillColor:
+                Cesium.Color.WHITE,
+
+            outlineColor:
+                Cesium.Color.BLACK,
+
+            outlineWidth:
+                3,
+
+            style:
+                Cesium.LabelStyle.FILL_AND_OUTLINE,
+
+            verticalOrigin:
+                Cesium.VerticalOrigin.BOTTOM,
+
+            pixelOffset:
+                new Cesium.Cartesian2(
+                    0,
+                    -12
+                )
+
+        }
+
+    });
+}
+
+
+/* =========================================================
+   DRAW MULTI-POINT ROUTE
+   ========================================================= */
+
+function drawMultiPointRoute(
+    airports
 ) {
 
     if (!globeViewer) {
@@ -615,96 +2444,159 @@ function drawFlightRoute(
     globeViewer.entities.removeAll();
 
 
+    if (
+        airports.length < 2
+    ) {
+
+        return;
+    }
+
+
     /*
-     Departure marker
+     Add departure marker.
      */
 
     addAirportMarker(
-        departure,
+
+        airports[0],
+
         Cesium.Color.LIME,
-        departure.code
+
+        airports[0].code
+
     );
 
 
     /*
-     Destination marker
+     Add destination marker.
      */
 
     addAirportMarker(
-        destination,
+
+        airports[
+            airports.length - 1
+        ],
+
         Cesium.Color.RED,
-        destination.code
+
+        airports[
+            airports.length - 1
+        ].code
+
     );
-
-
-    /*
-     Generate 101 points along
-     the great-circle route.
-     */
-
-    const routePoints =
-        generateGreatCirclePoints(
-
-            departure.latitude,
-            departure.longitude,
-
-            destination.latitude,
-            destination.longitude,
-
-            100
-        );
 
 
     /*
      Visualization altitude.
 
-     This is not aircraft cruise altitude yet.
-     We will add real flight altitude later.
+     This is not yet the aircraft's real
+     vertical profile.
      */
 
     const routeHeight =
         150000;
 
 
-    const routePositions = [];
-
-
-    routePoints.forEach(
-        point => {
-
-            routePositions.push(
-
-                Cesium.Cartesian3.fromDegrees(
-                    point.longitude,
-                    point.latitude,
-                    routeHeight
-                )
-
-            );
-
-        }
-    );
+    const routePositions =
+        [];
 
 
     /*
-     Draw route.
+     Generate each leg separately.
+
+     Each leg follows a great-circle path.
+     */
+
+    for (
+        let i = 0;
+        i < airports.length - 1;
+        i++
+    ) {
+
+        const from =
+            airports[i];
+
+
+        const to =
+            airports[i + 1];
+
+
+        const legPoints =
+            generateGreatCirclePoints(
+
+                from.latitude,
+                from.longitude,
+
+                to.latitude,
+                to.longitude,
+
+                50
+
+            );
+
+
+        legPoints.forEach(
+            (point, pointIndex) => {
+
+                /*
+                 Avoid duplicating the first point
+                 of every leg after the first leg.
+                 */
+
+                if (
+                    i > 0 &&
+                    pointIndex === 0
+                ) {
+
+                    return;
+                }
+
+
+                routePositions.push(
+
+                    Cesium.Cartesian3.fromDegrees(
+
+                        point.longitude,
+
+                        point.latitude,
+
+                        routeHeight
+
+                    )
+
+                );
+
+            }
+        );
+    }
+
+
+    /*
+     Draw complete route.
      */
 
     globeViewer.entities.add({
 
         name:
-            `${departure.code} → ${destination.code}`,
+            "V1 Flight Route",
+
 
         description:
 
             `
             <div style="font-family:Arial,sans-serif;">
                 <strong>
-                    ${departure.code} → ${destination.code}
+                    V1 Flight Route
                 </strong><br>
-                Direct great-circle route
+                ${airports
+                    .map(
+                        airport =>
+                            airport.code
+                    )
+                    .join(" → ")}
             </div>
             `,
+
 
         polyline: {
 
@@ -738,68 +2630,46 @@ function drawFlightRoute(
 
 
     /*
-     Add intermediate route markers.
+     Add waypoint markers.
+
+     The first and last airport are not
+     duplicated as waypoint markers.
      */
 
-    const markerIndexes = [
-        25,
-        50,
-        75
-    ];
+    for (
+        let i = 1;
+        i < airports.length - 1;
+        i++
+    ) {
+
+        const waypoint =
+            routeWaypoints[i - 1];
 
 
-    markerIndexes.forEach(
-        index => {
+        if (
+            waypoint &&
+            waypoint.airport
+        ) {
 
-            const point =
-                routePoints[index];
+            addWaypointMarker(
 
+                airports[i],
 
-            globeViewer.entities.add({
+                waypoint,
 
-                position:
+                i,
 
-                    Cesium.Cartesian3.fromDegrees(
-                        point.longitude,
-                        point.latitude,
-                        routeHeight
-                    ),
+                routeHeight
 
-                point: {
-
-                    pixelSize:
-                        5,
-
-                    color:
-                        Cesium.Color.CYAN,
-
-                    outlineColor:
-                        Cesium.Color.WHITE,
-
-                    outlineWidth:
-                        1
-
-                },
-
-                description:
-
-                    `
-                    <div style="font-family:Arial,sans-serif;">
-                        Great-circle route point<br>
-                        Latitude:
-                        ${point.latitude.toFixed(4)}°<br>
-                        Longitude:
-                        ${point.longitude.toFixed(4)}°
-                    </div>
-                    `
-            });
+            );
 
         }
-    );
+
+    }
 
 
     /*
-     Update globe status.
+     Globe status.
      */
 
     const globeStatus =
@@ -811,13 +2681,18 @@ function drawFlightRoute(
     if (globeStatus) {
 
         globeStatus.textContent =
-            `${departure.code} → ${destination.code}`;
+            airports
+                .map(
+                    airport =>
+                        airport.code
+                )
+                .join(" → ");
 
     }
 
 
     /*
-     Fly camera to route.
+     Camera.
      */
 
     globeViewer.flyTo(
@@ -845,18 +2720,32 @@ function drawFlightRoute(
 
     );
 
+
+    /*
+     Update route point count.
+
+     The route consists of the sampled
+     globe path rather than only user waypoints.
+     */
+
+    document.getElementById(
+        "routePoints"
+    ).textContent =
+        routePositions.length;
 }
 
 
 /* =========================================================
-   PLAN FLIGHT
+   PLAN DIRECT FLIGHT
    ========================================================= */
 
 async function planFlight() {
 
     const departureCode =
         document
-            .getElementById("departure")
+            .getElementById(
+                "departure"
+            )
             .value
             .trim()
             .toUpperCase();
@@ -864,7 +2753,9 @@ async function planFlight() {
 
     const destinationCode =
         document
-            .getElementById("destination")
+            .getElementById(
+                "destination"
+            )
             .value
             .trim()
             .toUpperCase();
@@ -927,9 +2818,49 @@ async function planFlight() {
     }
 
 
+    departureAirport =
+        departure;
+
+
+    destinationAirport =
+        destination;
+
+
+    routeAirports = [
+
+        departure,
+
+        ...routeWaypoints
+            .filter(
+                waypoint =>
+                    waypoint.airport
+            )
+            .map(
+                waypoint =>
+                    waypoint.airport
+            ),
+
+        destination
+
+    ];
+
+
     /*
-     Display airports.
+     If waypoints have not yet been resolved,
+     use a simple direct route.
      */
+
+    if (
+        routeWaypoints.length > 0 &&
+        routeAirports.length !==
+            routeWaypoints.length + 2
+    ) {
+
+        await updateRoute();
+
+        return;
+    }
+
 
     displayAirport(
         departure,
@@ -943,10 +2874,6 @@ async function planFlight() {
     );
 
 
-    /*
-     Display route codes.
-     */
-
     document.getElementById(
         "routeDeparture"
     ).textContent =
@@ -958,10 +2885,6 @@ async function planFlight() {
     ).textContent =
         destination.code;
 
-
-    /*
-     Distance.
-     */
 
     const distance =
         calculateDistance(
@@ -978,12 +2901,10 @@ async function planFlight() {
     document.getElementById(
         "distance"
     ).textContent =
-        `${Math.round(distance).toLocaleString()} NM`;
+        formatNm(
+            distance
+        );
 
-
-    /*
-     Initial true bearing.
-     */
 
     const initialBearing =
         calculateInitialBearing(
@@ -996,10 +2917,6 @@ async function planFlight() {
 
         );
 
-
-    /*
-     Final true bearing.
-     */
 
     const finalBearing =
         calculateFinalBearing(
@@ -1029,10 +2946,6 @@ async function planFlight() {
             .padStart(3, "0")}°`;
 
 
-    /*
-     Generate route points.
-     */
-
     const routePoints =
         generateGreatCirclePoints(
 
@@ -1043,6 +2956,7 @@ async function planFlight() {
             destination.longitude,
 
             100
+
         );
 
 
@@ -1052,30 +2966,87 @@ async function planFlight() {
         routePoints.length;
 
 
-    /*
-     Show results.
-     */
-
     document.getElementById(
         "result"
     ).style.display =
         "block";
 
 
-    /*
-     Draw route on globe.
-     */
-
-    drawFlightRoute(
-        departure,
-        destination
+    drawMultiPointRoute(
+        routeAirports
     );
 
 
-    status.textContent =
-        "Flight plan created successfully.";
+    calculateEstimatedTime(
+        routeAirports
+    );
 
+
+    document.getElementById(
+        "status"
+    ).textContent =
+        "Flight plan created successfully.";
 }
+
+
+/* =========================================================
+   AIRCRAFT SELECTOR
+   ========================================================= */
+
+document.getElementById(
+    "aircraft"
+).addEventListener(
+    "change",
+    () => {
+
+        updateAircraftInformation();
+
+        calculatePerformance();
+
+        /*
+         Recalculate time if a route already exists.
+         */
+
+        if (
+            routeAirports.length >= 2
+        ) {
+
+            calculateEstimatedTime(
+                routeAirports
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   PERFORMANCE INPUT EVENTS
+   ========================================================= */
+
+document.getElementById(
+    "payload"
+).addEventListener(
+    "input",
+    () => {
+
+        calculatePerformance();
+
+    }
+);
+
+
+document.getElementById(
+    "fuelLoad"
+).addEventListener(
+    "input",
+    () => {
+
+        calculatePerformance();
+
+    }
+);
 
 
 /* =========================================================
@@ -1088,9 +3059,18 @@ document.getElementById(
     "Airport lookup ready.";
 
 
+updateAircraftInformation();
+
+
 initializeGlobe();
 
 
+renderWaypointTable();
+
+
+calculatePerformance();
+
+
 console.log(
-    "V1 Flight Planner - navigation route engine loaded"
+    "V1 Flight Planner - aircraft and route engine loaded"
 );
