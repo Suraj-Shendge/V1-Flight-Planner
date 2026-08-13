@@ -1,39 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>V1 Flight Planner</title>
 
-
-  <!-- =========================================
-       CESIUMJS 3D GLOBE
-       ========================================= -->
-
+  <!-- CesiumJS 3D Globe -->
   <link
     href="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Widgets/widgets.css"
     rel="stylesheet"
   >
-
-  <script
-    src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js">
-  </script>
-
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js"></script>
 
   <style>
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-
 
     body {
       font-family: Arial, sans-serif;
@@ -42,22 +26,15 @@
       min-height: 100vh;
     }
 
-
-    /* =========================================
-       HEADER
-       ========================================= */
-
     header {
       padding: 20px;
       background: #111c30;
       border-bottom: 1px solid #26344d;
     }
 
-
     header h1 {
       font-size: 24px;
     }
-
 
     header p {
       color: #8fa4c4;
@@ -65,23 +42,14 @@
       font-size: 14px;
     }
 
-
-    /* =========================================
-       MAIN
-       ========================================= */
-
     main {
       padding: 20px;
       max-width: 1200px;
       margin: auto;
     }
 
-
-    /* =========================================
-       GENERAL CARDS
-       ========================================= */
-
-    .card {
+    .card,
+    .globe-card {
       background: #111c30;
       border: 1px solid #26344d;
       border-radius: 14px;
@@ -89,16 +57,11 @@
       margin-bottom: 20px;
     }
 
-
-    .card h2 {
+    .card h2,
+    .globe-card h2 {
       margin-bottom: 16px;
       font-size: 18px;
     }
-
-
-    /* =========================================
-       FLIGHT INPUTS
-       ========================================= */
 
     .inputs {
       display: grid;
@@ -106,14 +69,12 @@
       gap: 15px;
     }
 
-
     label {
       display: block;
       color: #8fa4c4;
       font-size: 13px;
       margin-bottom: 7px;
     }
-
 
     input {
       width: 100%;
@@ -126,11 +87,9 @@
       outline: none;
     }
 
-
     input:focus {
       border-color: #2675ff;
     }
-
 
     button {
       width: 100%;
@@ -145,16 +104,13 @@
       cursor: pointer;
     }
 
-
     button:hover {
       background: #3681ff;
     }
 
-
     button:active {
       transform: translateY(1px);
     }
-
 
     .status {
       margin-top: 15px;
@@ -162,16 +118,10 @@
       font-size: 13px;
     }
 
-
-    /* =========================================
-       FLIGHT RESULT
-       ========================================= */
-
     #result {
       display: none;
       margin-top: 20px;
     }
-
 
     .airport {
       background: #0b1220;
@@ -182,28 +132,20 @@
       line-height: 1.6;
     }
 
-
     .airport-code {
       font-size: 22px;
       font-weight: bold;
     }
-
 
     .airport-name {
       font-size: 15px;
       margin-top: 3px;
     }
 
-
     .airport-location {
       color: #8fa4c4;
       font-size: 13px;
     }
-
-
-    /* =========================================
-       ROUTE HEADER
-       ========================================= */
 
     .route {
       display: flex;
@@ -212,32 +154,16 @@
       margin-top: 15px;
     }
 
-
     .route-code {
       font-size: 20px;
       font-weight: bold;
     }
-
 
     .route-line {
       flex: 1;
       height: 2px;
       background: #2675ff;
     }
-
-
-    /* =========================================
-       3D GLOBE
-       ========================================= */
-
-    .globe-card {
-      background: #111c30;
-      border: 1px solid #26344d;
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
 
     .globe-header {
       display: flex;
@@ -247,19 +173,15 @@
       margin-bottom: 15px;
     }
 
-
     .globe-header h2 {
       margin: 0;
-      font-size: 18px;
     }
-
 
     .globe-status {
       color: #8fa4c4;
       font-size: 13px;
       text-align: right;
     }
-
 
     #cesiumContainer {
       width: 100%;
@@ -270,135 +192,72 @@
       position: relative;
     }
 
-
-    /* Cesium can display a little better
-       with our dark application theme */
-
-    .cesium-viewer {
-      width: 100%;
-      height: 100%;
-    }
-
-
-    /* =========================================
-       FLIGHT INFORMATION
-       ========================================= */
-
     .info-row {
       display: flex;
       justify-content: space-between;
+      gap: 20px;
       padding: 11px 0;
       border-bottom: 1px solid #26344d;
     }
-
 
     .info-row:last-child {
       border-bottom: none;
     }
 
-
     .info-label {
       color: #8fa4c4;
     }
 
-
     .info-value {
       font-weight: bold;
+      text-align: right;
     }
 
-
-    /* =========================================
-       RESPONSIVE DESIGN
-       ========================================= */
-
     @media (max-width: 700px) {
-
       .inputs {
         grid-template-columns: 1fr;
       }
 
-
       main {
         padding: 12px;
       }
-
 
       .globe-header {
         flex-direction: column;
         align-items: flex-start;
       }
 
-
       .globe-status {
         text-align: left;
       }
 
-
       #cesiumContainer {
         height: 430px;
       }
-
     }
 
-
     @media (max-width: 600px) {
-
       .route-code {
         font-size: 17px;
       }
-
     }
-
   </style>
-
 </head>
 
-
 <body>
-
-
-  <!-- =========================================
-       HEADER
-       ========================================= -->
-
   <header>
-
-    <h1>
-      ✈️ V1 Flight Planner
-    </h1>
-
-    <p>
-      Free flight planning system
-    </p>
-
+    <h1>✈️ V1 Flight Planner</h1>
+    <p>Free flight planning system</p>
   </header>
 
-
   <main>
-
-
-    <!-- =======================================
-         FLIGHT SETUP
-         ======================================= -->
-
+    <!-- Flight Setup -->
     <div class="card">
-
-      <h2>
-        Flight Setup
-      </h2>
-
+      <h2>Flight Setup</h2>
 
       <div class="inputs">
-
-
-        <!-- DEPARTURE -->
-
         <div>
-
-          <label>
-            Departure ICAO
-          </label>
-
+          <label for="departure">Departure ICAO</label>
           <input
             id="departure"
             type="text"
@@ -406,18 +265,10 @@
             placeholder="VABB"
             autocomplete="off"
           >
-
         </div>
 
-
-        <!-- DESTINATION -->
-
         <div>
-
-          <label>
-            Destination ICAO
-          </label>
-
+          <label for="destination">Destination ICAO</label>
           <input
             id="destination"
             type="text"
@@ -425,235 +276,93 @@
             placeholder="VIDP"
             autocomplete="off"
           >
-
         </div>
-
-
       </div>
 
-
-      <button
-        onclick="planFlight()"
-      >
+      <button type="button" onclick="planFlight()">
         PLAN FLIGHT
       </button>
 
-
-      <div
-        class="status"
-        id="status"
-      >
+      <div class="status" id="status" aria-live="polite">
         Airport lookup ready.
       </div>
-
     </div>
 
-
-    <!-- =======================================
-         FLIGHT RESULT
-         ======================================= -->
-
-    <div
-      class="card"
-      id="result"
-    >
-
-      <h2>
-        Flight
-      </h2>
-
+    <!-- Flight Result -->
+    <div class="card" id="result">
+      <h2>Flight</h2>
 
       <div class="route">
-
-        <span
-          class="route-code"
-          id="routeDeparture"
-        >
-          ---
-        </span>
-
-
+        <span class="route-code" id="routeDeparture">---</span>
         <div class="route-line"></div>
-
-
-        <span
-          class="route-code"
-          id="routeDestination"
-        >
-          ---
-        </span>
-
+        <span class="route-code" id="routeDestination">---</span>
       </div>
 
-
-      <!-- DEPARTURE -->
-
-      <h2 style="margin-top:25px;">
-        Departure
-      </h2>
-
+      <h2 style="margin-top:25px;">Departure</h2>
 
       <div class="airport">
-
-        <div
-          class="airport-code"
-          id="depCode"
-        >
-          ---
-        </div>
-
-
-        <div
-          class="airport-name"
-          id="depName"
-        >
-          ---
-        </div>
-
-
-        <div
-          class="airport-location"
-          id="depLocation"
-        >
-          ---
-        </div>
-
+        <div class="airport-code" id="depCode">---</div>
+        <div class="airport-name" id="depName">---</div>
+        <div class="airport-location" id="depLocation">---</div>
       </div>
 
-
-      <!-- DESTINATION -->
-
-      <h2 style="margin-top:25px;">
-        Destination
-      </h2>
-
+      <h2 style="margin-top:25px;">Destination</h2>
 
       <div class="airport">
-
-        <div
-          class="airport-code"
-          id="destCode"
-        >
-          ---
-        </div>
-
-
-        <div
-          class="airport-name"
-          id="destName"
-        >
-          ---
-        </div>
-
-
-        <div
-          class="airport-location"
-          id="destLocation"
-        >
-          ---
-        </div>
-
+        <div class="airport-code" id="destCode">---</div>
+        <div class="airport-name" id="destName">---</div>
+        <div class="airport-location" id="destLocation">---</div>
       </div>
-
     </div>
 
-
-    <!-- =======================================
-         3D FLIGHT GLOBE
-         ======================================= -->
-
+    <!-- 3D Flight Globe -->
     <div class="globe-card">
-
-
       <div class="globe-header">
-
-        <h2>
-          🌍 3D Flight View
-        </h2>
-
-
-        <div
-          class="globe-status"
-          id="globeStatus"
-        >
+        <h2>🌍 3D Flight View</h2>
+        <div class="globe-status" id="globeStatus">
           Enter airports to display the route
         </div>
-
       </div>
 
-
-      <div
-        id="cesiumContainer"
-      ></div>
-
-
+      <div id="cesiumContainer"></div>
     </div>
 
-
-    <!-- =======================================
-         FLIGHT INFORMATION
-         ======================================= -->
-
+    <!-- Flight Information -->
     <div class="card">
-
-      <h2>
-        Flight Information
-      </h2>
-
+      <h2>Flight Information</h2>
 
       <div class="info-row">
-
-        <span class="info-label">
-          Distance
-        </span>
-
-        <span
-          class="info-value"
-          id="distance"
-        >
-          —
-        </span>
-
+        <span class="info-label">Distance</span>
+        <span class="info-value" id="distance">—</span>
       </div>
-
 
       <div class="info-row">
-
-        <span class="info-label">
-          Estimated Time
-        </span>
-
-        <span class="info-value">
-          —
-        </span>
-
+        <span class="info-label">Initial True Bearing</span>
+        <span class="info-value" id="initialBearing">—</span>
       </div>
-
 
       <div class="info-row">
-
-        <span class="info-label">
-          Fuel
-        </span>
-
-        <span class="info-value">
-          —
-        </span>
-
+        <span class="info-label">Final True Bearing</span>
+        <span class="info-value" id="finalBearing">—</span>
       </div>
 
+      <div class="info-row">
+        <span class="info-label">Route Points</span>
+        <span class="info-value" id="routePoints">—</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Estimated Time</span>
+        <span class="info-value">—</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Fuel</span>
+        <span class="info-value">—</span>
+      </div>
     </div>
-
-
   </main>
 
-
-  <!-- =========================================
-       FLIGHT PLANNING ENGINE
-       ========================================= -->
-
   <script src="app.js"></script>
-
-
 </body>
 </html>
