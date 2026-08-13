@@ -15,73 +15,35 @@ let globeViewer = null;
 
 async function findAirport(code) {
 
-    code =
-        code
-            .trim()
-            .toUpperCase();
-
+    code = code.trim().toUpperCase();
 
     try {
 
-        const response =
-            await fetch(
-                `${AIRPORT_API}/${encodeURIComponent(code)}`
-            );
-
+        const response = await fetch(
+            `${AIRPORT_API}/${encodeURIComponent(code)}`
+        );
 
         if (!response.ok) {
-
             console.error(
                 "API HTTP error:",
                 response.status
             );
-
             return null;
         }
 
+        const raw = await response.json();
 
-        const raw =
-            await response.json();
+        console.log("RAW API:", raw);
 
-
-        console.log(
-            "RAW API:",
-            raw
-        );
-
-
-        /*
-         AirportsAPI structure:
-
-         data
-           └── attributes
-                 ├── name
-                 ├── code
-                 ├── latitude
-                 ├── longitude
-                 ├── elevation
-                 ├── icao_code
-                 └── iata_code
-        */
-
-
-        if (
-            !raw.data ||
-            !raw.data.attributes
-        ) {
-
+        if (!raw.data || !raw.data.attributes) {
             console.error(
                 "Unexpected API structure:",
                 raw
             );
-
             return null;
         }
 
-
-        const a =
-            raw.data.attributes;
-
+        const a = raw.data.attributes;
 
         const airport = {
 
@@ -106,18 +68,14 @@ async function findAirport(code) {
 
             elevation:
                 Number(a.elevation) || 0
-
         };
-
 
         console.log(
             "NORMALIZED AIRPORT:",
             airport
         );
 
-
         return airport;
-
 
     } catch (error) {
 
@@ -126,11 +84,8 @@ async function findAirport(code) {
             error
         );
 
-
         return null;
-
     }
-
 }
 
 
@@ -145,47 +100,25 @@ function calculateDistance(
     lon2
 ) {
 
-    const R =
-        3440.065;
-
+    const R = 3440.065;
 
     const φ1 =
-        lat1 *
-        Math.PI /
-        180;
-
+        lat1 * Math.PI / 180;
 
     const φ2 =
-        lat2 *
-        Math.PI /
-        180;
-
+        lat2 * Math.PI / 180;
 
     const Δφ =
-        (
-            lat2 -
-            lat1
-        ) *
-        Math.PI /
-        180;
-
+        (lat2 - lat1) * Math.PI / 180;
 
     const Δλ =
-        (
-            lon2 -
-            lon1
-        ) *
-        Math.PI /
-        180;
-
+        (lon2 - lon1) * Math.PI / 180;
 
     const a =
         Math.sin(Δφ / 2) ** 2 +
-
         Math.cos(φ1) *
         Math.cos(φ2) *
         Math.sin(Δλ / 2) ** 2;
-
 
     const c =
         2 *
@@ -194,9 +127,230 @@ function calculateDistance(
             Math.sqrt(1 - a)
         );
 
-
     return R * c;
+}
 
+
+/* =========================================================
+   INITIAL TRUE BEARING
+   ========================================================= */
+
+function calculateInitialBearing(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+
+    const φ1 =
+        lat1 * Math.PI / 180;
+
+    const φ2 =
+        lat2 * Math.PI / 180;
+
+    const Δλ =
+        (lon2 - lon1) * Math.PI / 180;
+
+    const y =
+        Math.sin(Δλ) * Math.cos(φ2);
+
+    const x =
+        Math.cos(φ1) * Math.sin(φ2) -
+        Math.sin(φ1) *
+        Math.cos(φ2) *
+        Math.cos(Δλ);
+
+    const θ =
+        Math.atan2(y, x) *
+        180 / Math.PI;
+
+    return normalizeBearing(θ);
+}
+
+
+/* =========================================================
+   FINAL TRUE BEARING
+   ========================================================= */
+
+function calculateFinalBearing(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+
+    const reverseBearing =
+        calculateInitialBearing(
+            lat2,
+            lon2,
+            lat1,
+            lon1
+        );
+
+    return normalizeBearing(
+        reverseBearing + 180
+    );
+}
+
+
+/* =========================================================
+   NORMALIZE BEARING
+   ========================================================= */
+
+function normalizeBearing(
+    bearing
+) {
+
+    return (
+        bearing + 360
+    ) % 360;
+}
+
+
+/* =========================================================
+   GREAT-CIRCLE INTERMEDIATE POINTS
+   ========================================================= */
+
+function generateGreatCirclePoints(
+    lat1,
+    lon1,
+    lat2,
+    lon2,
+    numberOfPoints = 100
+) {
+
+    const φ1 =
+        lat1 * Math.PI / 180;
+
+    const λ1 =
+        lon1 * Math.PI / 180;
+
+    const φ2 =
+        lat2 * Math.PI / 180;
+
+    const λ2 =
+        lon2 * Math.PI / 180;
+
+
+    const sinHalfLat =
+        Math.sin(
+            (φ2 - φ1) / 2
+        );
+
+    const sinHalfLon =
+        Math.sin(
+            (λ2 - λ1) / 2
+        );
+
+    const a =
+        sinHalfLat * sinHalfLat +
+        Math.cos(φ1) *
+        Math.cos(φ2) *
+        sinHalfLon * sinHalfLon;
+
+    const δ =
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+
+
+    if (δ < 1e-10) {
+
+        return [
+            {
+                latitude: lat1,
+                longitude: lon1
+            }
+        ];
+    }
+
+
+    const points = [];
+
+
+    for (
+        let i = 0;
+        i <= numberOfPoints;
+        i++
+    ) {
+
+        const fraction =
+            i / numberOfPoints;
+
+        const sinδ =
+            Math.sin(δ);
+
+        const A =
+            Math.sin(
+                (1 - fraction) * δ
+            ) / sinδ;
+
+        const B =
+            Math.sin(
+                fraction * δ
+            ) / sinδ;
+
+
+        const x =
+            A *
+            Math.cos(φ1) *
+            Math.cos(λ1) +
+
+            B *
+            Math.cos(φ2) *
+            Math.cos(λ2);
+
+
+        const y =
+            A *
+            Math.cos(φ1) *
+            Math.sin(λ1) +
+
+            B *
+            Math.cos(φ2) *
+            Math.sin(λ2);
+
+
+        const z =
+            A *
+            Math.sin(φ1) +
+
+            B *
+            Math.sin(φ2);
+
+
+        const φ =
+            Math.atan2(
+                z,
+                Math.sqrt(
+                    x * x +
+                    y * y
+                )
+            );
+
+
+        const λ =
+            Math.atan2(
+                y,
+                x
+            );
+
+
+        points.push({
+
+            latitude:
+                φ * 180 / Math.PI,
+
+            longitude:
+                λ * 180 / Math.PI
+
+        });
+    }
+
+
+    return points;
 }
 
 
@@ -226,7 +380,6 @@ function displayAirport(
     ).textContent =
         `${airport.iata || "No IATA"} • ` +
         `Elevation ${airport.elevation} ft`;
-
 }
 
 
@@ -237,11 +390,6 @@ function displayAirport(
 function initializeGlobe() {
 
     try {
-
-        /*
-         Create a pure 3D globe without
-         requiring a Cesium ion token.
-        */
 
         globeViewer =
             new Cesium.Viewer(
@@ -283,24 +431,12 @@ function initializeGlobe() {
 
                     terrainProvider:
                         new Cesium.EllipsoidTerrainProvider()
-
                 }
             );
 
 
-        /*
-         Remove the default imagery.
-        */
-
         globeViewer.imageryLayers.removeAll();
 
-
-        /*
-         Add OpenStreetMap imagery.
-
-         This gives us a free initial
-         geographic base layer.
-        */
 
         const osm =
             new Cesium.OpenStreetMapImageryProvider({
@@ -316,25 +452,13 @@ function initializeGlobe() {
         );
 
 
-        /*
-         Enable realistic day/night lighting.
-        */
-
         globeViewer.scene.globe.enableLighting =
             true;
 
 
-        /*
-         Enable depth testing against terrain.
-        */
-
         globeViewer.scene.globe.depthTestAgainstTerrain =
             false;
 
-
-        /*
-         Start with a global Earth view.
-        */
 
         globeViewer.camera.setView({
 
@@ -373,9 +497,7 @@ function initializeGlobe() {
                 "3D globe failed to initialize.";
 
         }
-
     }
-
 }
 
 
@@ -490,17 +612,12 @@ function drawFlightRoute(
     }
 
 
-    /*
-     Remove the previous flight route
-     and airport markers.
-    */
-
     globeViewer.entities.removeAll();
 
 
     /*
      Departure marker
-    */
+     */
 
     addAirportMarker(
         departure,
@@ -511,7 +628,7 @@ function drawFlightRoute(
 
     /*
      Destination marker
-    */
+     */
 
     addAirportMarker(
         destination,
@@ -521,31 +638,57 @@ function drawFlightRoute(
 
 
     /*
-     Create a geodesic flight route.
+     Generate 101 points along
+     the great-circle route.
+     */
 
-     We use a small altitude above
-     the Earth's surface so the route
-     is clearly visible as a flight path.
-    */
+    const routePoints =
+        generateGreatCirclePoints(
+
+            departure.latitude,
+            departure.longitude,
+
+            destination.latitude,
+            destination.longitude,
+
+            100
+        );
+
+
+    /*
+     Visualization altitude.
+
+     This is not aircraft cruise altitude yet.
+     We will add real flight altitude later.
+     */
 
     const routeHeight =
         150000;
 
 
-    const routePositions =
-        Cesium.Cartesian3.fromDegreesArrayHeights([
-
-            departure.longitude,
-            departure.latitude,
-            routeHeight,
+    const routePositions = [];
 
 
-            destination.longitude,
-            destination.latitude,
-            routeHeight
+    routePoints.forEach(
+        point => {
 
-        ]);
+            routePositions.push(
 
+                Cesium.Cartesian3.fromDegrees(
+                    point.longitude,
+                    point.latitude,
+                    routeHeight
+                )
+
+            );
+
+        }
+    );
+
+
+    /*
+     Draw route.
+     */
 
     globeViewer.entities.add({
 
@@ -558,8 +701,7 @@ function drawFlightRoute(
             <div style="font-family:Arial,sans-serif;">
                 <strong>
                     ${departure.code} → ${destination.code}
-                </strong>
-                <br>
+                </strong><br>
                 Direct great-circle route
             </div>
             `,
@@ -573,6 +715,7 @@ function drawFlightRoute(
                 4,
 
             material:
+
                 new Cesium.PolylineGlowMaterialProperty({
 
                     glowPower:
@@ -584,7 +727,7 @@ function drawFlightRoute(
                 }),
 
             arcType:
-                Cesium.ArcType.GEODESIC,
+                Cesium.ArcType.NONE,
 
             clampToGround:
                 false
@@ -595,48 +738,69 @@ function drawFlightRoute(
 
 
     /*
-     Add a subtle midpoint marker.
-    */
+     Add intermediate route markers.
+     */
 
-    const midLatitude =
-        (
-            departure.latitude +
-            destination.latitude
-        ) / 2;
-
-
-    const midLongitude =
-        (
-            departure.longitude +
-            destination.longitude
-        ) / 2;
+    const markerIndexes = [
+        25,
+        50,
+        75
+    ];
 
 
-    globeViewer.entities.add({
+    markerIndexes.forEach(
+        index => {
 
-        position:
-            Cesium.Cartesian3.fromDegrees(
-                midLongitude,
-                midLatitude,
-                routeHeight
-            ),
+            const point =
+                routePoints[index];
 
-        point: {
 
-            pixelSize:
-                5,
+            globeViewer.entities.add({
 
-            color:
-                Cesium.Color.CYAN
+                position:
+
+                    Cesium.Cartesian3.fromDegrees(
+                        point.longitude,
+                        point.latitude,
+                        routeHeight
+                    ),
+
+                point: {
+
+                    pixelSize:
+                        5,
+
+                    color:
+                        Cesium.Color.CYAN,
+
+                    outlineColor:
+                        Cesium.Color.WHITE,
+
+                    outlineWidth:
+                        1
+
+                },
+
+                description:
+
+                    `
+                    <div style="font-family:Arial,sans-serif;">
+                        Great-circle route point<br>
+                        Latitude:
+                        ${point.latitude.toFixed(4)}°<br>
+                        Longitude:
+                        ${point.longitude.toFixed(4)}°
+                    </div>
+                    `
+            });
 
         }
-
-    });
+    );
 
 
     /*
      Update globe status.
-    */
+     */
 
     const globeStatus =
         document.getElementById(
@@ -653,8 +817,8 @@ function drawFlightRoute(
 
 
     /*
-     Fly the camera to the complete route.
-    */
+     Fly camera to route.
+     */
 
     globeViewer.flyTo(
 
@@ -712,10 +876,6 @@ async function planFlight() {
         );
 
 
-    /*
-     Validate input.
-    */
-
     if (
         !departureCode ||
         !destinationCode
@@ -725,17 +885,12 @@ async function planFlight() {
             "Enter both departure and destination airports.";
 
         return;
-
     }
 
 
     status.textContent =
         "Looking up airports...";
 
-
-    /*
-     Look up both airports simultaneously.
-    */
 
     const [
         departure,
@@ -754,23 +909,14 @@ async function planFlight() {
         ]);
 
 
-    /*
-     Validate departure.
-    */
-
     if (!departure) {
 
         status.textContent =
             `Could not find ${departureCode}.`;
 
         return;
-
     }
 
-
-    /*
-     Validate destination.
-    */
 
     if (!destination) {
 
@@ -778,13 +924,12 @@ async function planFlight() {
             `Could not find ${destinationCode}.`;
 
         return;
-
     }
 
 
     /*
-     Display airport information.
-    */
+     Display airports.
+     */
 
     displayAirport(
         departure,
@@ -800,7 +945,7 @@ async function planFlight() {
 
     /*
      Display route codes.
-    */
+     */
 
     document.getElementById(
         "routeDeparture"
@@ -815,8 +960,8 @@ async function planFlight() {
 
 
     /*
-     Calculate direct distance.
-    */
+     Distance.
+     */
 
     const distance =
         calculateDistance(
@@ -837,8 +982,79 @@ async function planFlight() {
 
 
     /*
-     Show flight results.
-    */
+     Initial true bearing.
+     */
+
+    const initialBearing =
+        calculateInitialBearing(
+
+            departure.latitude,
+            departure.longitude,
+
+            destination.latitude,
+            destination.longitude
+
+        );
+
+
+    /*
+     Final true bearing.
+     */
+
+    const finalBearing =
+        calculateFinalBearing(
+
+            departure.latitude,
+            departure.longitude,
+
+            destination.latitude,
+            destination.longitude
+
+        );
+
+
+    document.getElementById(
+        "initialBearing"
+    ).textContent =
+        `${Math.round(initialBearing)
+            .toString()
+            .padStart(3, "0")}°`;
+
+
+    document.getElementById(
+        "finalBearing"
+    ).textContent =
+        `${Math.round(finalBearing)
+            .toString()
+            .padStart(3, "0")}°`;
+
+
+    /*
+     Generate route points.
+     */
+
+    const routePoints =
+        generateGreatCirclePoints(
+
+            departure.latitude,
+            departure.longitude,
+
+            destination.latitude,
+            destination.longitude,
+
+            100
+        );
+
+
+    document.getElementById(
+        "routePoints"
+    ).textContent =
+        routePoints.length;
+
+
+    /*
+     Show results.
+     */
 
     document.getElementById(
         "result"
@@ -847,19 +1063,14 @@ async function planFlight() {
 
 
     /*
-     Draw the route on the
-     interactive 3D globe.
-    */
+     Draw route on globe.
+     */
 
     drawFlightRoute(
         departure,
         destination
     );
 
-
-    /*
-     Final status.
-    */
 
     status.textContent =
         "Flight plan created successfully.";
@@ -881,5 +1092,5 @@ initializeGlobe();
 
 
 console.log(
-    "V1 Flight Planner - application loaded"
+    "V1 Flight Planner - navigation route engine loaded"
 );
