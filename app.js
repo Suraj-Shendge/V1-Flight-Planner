@@ -2204,7 +2204,162 @@ function calculateEstimatedTime(
         `${wholeHours}h ${minutes}m`;
 }
 
+/* =========================================================
+   INITIALIZE 3D GLOBE
+   ========================================================= */
 
+function initializeGlobe() {
+
+    try {
+
+        globeViewer =
+            new Cesium.Viewer(
+                "cesiumContainer",
+                {
+
+                    animation:
+                        false,
+
+                    timeline:
+                        false,
+
+                    baseLayerPicker:
+                        false,
+
+                    geocoder:
+                        false,
+
+                    homeButton:
+                        false,
+
+                    sceneModePicker:
+                        false,
+
+                    navigationHelpButton:
+                        false,
+
+                    fullscreenButton:
+                        false,
+
+                    vrButton:
+                        false,
+
+                    infoBox:
+                        true,
+
+                    selectionIndicator:
+                        true,
+
+                    terrainProvider:
+                        new Cesium.EllipsoidTerrainProvider()
+
+                }
+            );
+
+
+        /*
+         Remove Cesium's default imagery.
+         */
+
+        globeViewer.imageryLayers.removeAll();
+
+
+        /*
+         OpenStreetMap imagery.
+         */
+
+        const osm =
+            new Cesium.OpenStreetMapImageryProvider({
+
+                url:
+                    "https://tile.openstreetmap.org/"
+
+            });
+
+
+        globeViewer.imageryLayers.addImageryProvider(
+            osm
+        );
+
+
+        /*
+         Enable globe lighting.
+         */
+
+        globeViewer.scene.globe.enableLighting =
+            true;
+
+
+        /*
+         We currently use a visualization altitude
+         for the route rather than terrain clamping.
+         */
+
+        globeViewer.scene.globe.depthTestAgainstTerrain =
+            false;
+
+
+        /*
+         Initial camera position.
+         */
+
+        globeViewer.camera.setView({
+
+            destination:
+                Cesium.Cartesian3.fromDegrees(
+
+                    78,
+                    20,
+                    15000000
+
+                )
+
+        });
+
+
+        console.log(
+            "V1 Flight Planner - 3D globe initialized"
+        );
+
+
+        const globeStatus =
+            document.getElementById(
+                "globeStatus"
+            );
+
+
+        if (globeStatus) {
+
+            globeStatus.textContent =
+                "3D globe ready.";
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Globe initialization failed:",
+            error
+        );
+
+
+        const globeStatus =
+            document.getElementById(
+                "globeStatus"
+            );
+
+
+        if (globeStatus) {
+
+            globeStatus.textContent =
+                "3D globe failed to initialize.";
+
+        }
+
+    }
+
+}
 /* =========================================================
    DRAW AIRPORT MARKER
    ========================================================= */
