@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>V1 Flight Planner</title>
 
   <style>
@@ -31,7 +32,7 @@
 
     header p {
       color: #8fa4c4;
-      margin-top: 5px;
+      margin-top: 6px;
       font-size: 14px;
     }
 
@@ -50,7 +51,7 @@
     }
 
     .card h2 {
-      margin-bottom: 15px;
+      margin-bottom: 16px;
       font-size: 18px;
     }
 
@@ -75,6 +76,11 @@
       background: #0b1220;
       color: white;
       font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2675ff;
     }
 
     button {
@@ -87,40 +93,87 @@
       color: white;
       font-size: 16px;
       font-weight: bold;
-      cursor: pointer;
     }
 
-    button:active {
-      transform: scale(0.98);
+    .status {
+      margin-top: 15px;
+      color: #8fa4c4;
+      font-size: 13px;
     }
 
     #result {
       display: none;
       margin-top: 20px;
-      padding: 15px;
-      border-radius: 10px;
-      background: #0b1220;
-      border: 1px solid #26344d;
     }
 
-    .stat {
+    .airport {
+      background: #0b1220;
+      border: 1px solid #26344d;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .airport-code {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .airport-name {
+      font-size: 15px;
+      margin-top: 3px;
+    }
+
+    .airport-location {
+      color: #8fa4c4;
+      font-size: 13px;
+    }
+
+    .route {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .route-code {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .route-line {
+      flex: 1;
+      height: 2px;
+      background: #2675ff;
+    }
+
+    .info-row {
       display: flex;
       justify-content: space-between;
-      padding: 9px 0;
+      padding: 11px 0;
       border-bottom: 1px solid #26344d;
     }
 
-    .stat:last-child {
+    .info-row:last-child {
       border-bottom: none;
     }
 
-    .value {
+    .info-label {
+      color: #8fa4c4;
+    }
+
+    .info-value {
       font-weight: bold;
     }
 
     @media (max-width: 600px) {
       .inputs {
         grid-template-columns: 1fr;
+      }
+
+      main {
+        padding: 12px;
       }
     }
   </style>
@@ -130,102 +183,161 @@
 
 <header>
   <h1>✈️ V1 Flight Planner</h1>
-  <p>Your free flight planning system</p>
+  <p>Free flight planning system</p>
 </header>
 
 <main>
 
   <div class="card">
+
     <h2>Flight Setup</h2>
 
     <div class="inputs">
 
       <div>
         <label>Departure ICAO</label>
-        <input id="departure" placeholder="Example: VABB">
+
+        <input
+          id="departure"
+          type="text"
+          maxlength="4"
+          placeholder="VABB"
+          autocomplete="off"
+        >
       </div>
 
       <div>
         <label>Destination ICAO</label>
-        <input id="destination" placeholder="Example: VIDP">
+
+        <input
+          id="destination"
+          type="text"
+          maxlength="4"
+          placeholder="VIDP"
+          autocomplete="off"
+        >
       </div>
 
     </div>
 
-    <button onclick="planFlight()">PLAN FLIGHT</button>
+    <button onclick="planFlight()">
+      PLAN FLIGHT
+    </button>
 
-    <div id="result">
+    <div class="status" id="status">
+      Loading airport database...
+    </div>
 
-      <div class="stat">
-        <span>Departure</span>
-        <span class="value" id="depResult"></span>
+  </div>
+
+
+  <div class="card" id="result">
+
+    <h2>Flight</h2>
+
+    <div class="route">
+
+      <span class="route-code" id="routeDeparture">
+        ---
+      </span>
+
+      <div class="route-line"></div>
+
+      <span class="route-code" id="routeDestination">
+        ---
+      </span>
+
+    </div>
+
+
+    <h2 style="margin-top:25px;">
+      Departure
+    </h2>
+
+    <div class="airport">
+
+      <div
+        class="airport-code"
+        id="depCode">
+        ---
       </div>
 
-      <div class="stat">
-        <span>Destination</span>
-        <span class="value" id="destResult"></span>
+      <div
+        class="airport-name"
+        id="depName">
+        ---
       </div>
 
-      <div class="stat">
-        <span>Status</span>
-        <span class="value">Ready</span>
+      <div
+        class="airport-location"
+        id="depLocation">
+        ---
+      </div>
+
+    </div>
+
+
+    <h2 style="margin-top:25px;">
+      Destination
+    </h2>
+
+    <div class="airport">
+
+      <div
+        class="airport-code"
+        id="destCode">
+        ---
+      </div>
+
+      <div
+        class="airport-name"
+        id="destName">
+        ---
+      </div>
+
+      <div
+        class="airport-location"
+        id="destLocation">
+        ---
       </div>
 
     </div>
 
   </div>
 
-  <div class="card">
-    <h2>Route</h2>
-    <p style="color:#8fa4c4;">
-      Navigation data will appear here once we connect our aviation databases.
-    </p>
-  </div>
 
   <div class="card">
+
     <h2>Flight Information</h2>
 
-    <div class="stat">
-      <span>Distance</span>
-      <span class="value">—</span>
+    <div class="info-row">
+      <span class="info-label">Distance</span>
+      <span class="info-value" id="distance">
+        —
+      </span>
     </div>
 
-    <div class="stat">
-      <span>Estimated Time</span>
-      <span class="value">—</span>
+    <div class="info-row">
+      <span class="info-label">Estimated Time</span>
+      <span class="info-value">
+        —
+      </span>
     </div>
 
-    <div class="stat">
-      <span>Fuel</span>
-      <span class="value">—</span>
+    <div class="info-row">
+      <span class="info-label">Fuel</span>
+      <span class="info-value">
+        —
+      </span>
     </div>
 
   </div>
 
 </main>
 
-<script>
 
-function planFlight() {
-
-  const departure =
-    document.getElementById("departure").value.toUpperCase();
-
-  const destination =
-    document.getElementById("destination").value.toUpperCase();
-
-  if (!departure || !destination) {
-    alert("Please enter both airports.");
-    return;
-  }
-
-  document.getElementById("depResult").textContent = departure;
-  document.getElementById("destResult").textContent = destination;
-
-  document.getElementById("result").style.display = "block";
-}
-
-</script>
+<!-- Our flight-planning engine -->
+<script src="app.js"></script>
 
 </body>
 </html>
