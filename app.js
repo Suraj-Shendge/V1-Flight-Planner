@@ -208,3 +208,7 @@ async function planFlight() {
   status.textContent =
     "Flight plan created successfully.";
 }
+
+// Application ready
+document.getElementById("status").textContent =
+  "Airport lookup ready.";
