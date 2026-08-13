@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V1 Flight Planner</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: white;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px;
+      background: #111c30;
+      border-bottom: 1px solid #26344d;
+    }
+
+    header h1 {
+      font-size: 24px;
+    }
+
+    header p {
+      color: #8fa4c4;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+
+    main {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .card {
+      background: #111c30;
+      border: 1px solid #26344d;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    label {
+      display: block;
+      color: #8fa4c4;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border-radius: 8px;
+      border: 1px solid #34435e;
+      background: #0b1220;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #2675ff;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #0b1220;
+      border: 1px solid #26344d;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid #26344d;
+    }
+
+    .stat:last-child {
+      border-bottom: none;
+    }
+
+    .value {
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .inputs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>✈️ V1 Flight Planner</h1>
+  <p>Your free flight planning system</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Flight Setup</h2>
+
+    <div class="inputs">
+
+      <div>
+        <label>Departure ICAO</label>
+        <input id="departure" placeholder="Example: VABB">
+      </div>
+
+      <div>
+        <label>Destination ICAO</label>
+        <input id="destination" placeholder="Example: VIDP">
+      </div>
+
+    </div>
+
+    <button onclick="planFlight()">PLAN FLIGHT</button>
+
+    <div id="result">
+
+      <div class="stat">
+        <span>Departure</span>
+        <span class="value" id="depResult"></span>
+      </div>
+
+      <div class="stat">
+        <span>Destination</span>
+        <span class="value" id="destResult"></span>
+      </div>
+
+      <div class="stat">
+        <span>Status</span>
+        <span class="value">Ready</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>Route</h2>
+    <p style="color:#8fa4c4;">
+      Navigation data will appear here once we connect our aviation databases.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Flight Information</h2>
+
+    <div class="stat">
+      <span>Distance</span>
+      <span class="value">—</span>
+    </div>
+
+    <div class="stat">
+      <span>Estimated Time</span>
+      <span class="value">—</span>
+    </div>
+
+    <div class="stat">
+      <span>Fuel</span>
+      <span class="value">—</span>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+
+function planFlight() {
+
+  const departure =
+    document.getElementById("departure").value.toUpperCase();
+
+  const destination =
+    document.getElementById("destination").value.toUpperCase();
+
+  if (!departure || !destination) {
+    alert("Please enter both airports.");
+    return;
+  }
+
+  document.getElementById("depResult").textContent = departure;
+  document.getElementById("destResult").textContent = destination;
+
+  document.getElementById("result").style.display = "block";
+}
+
+</script>
+
+</body>
+</html>
