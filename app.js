@@ -1,10 +1,7 @@
 // V1 Flight Planner
-// Lightweight airport lookup
+// Airport lookup + basic flight distance engine
 
 const AIRPORT_API = "https://airportsapi.com/api/airports";
-
-let departureAirport = null;
-let destinationAirport = null;
 
 
 // ------------------------------------
@@ -14,10 +11,6 @@ let destinationAirport = null;
 async function findAirport(code) {
 
   code = code.trim().toUpperCase();
-
-  if (!code) {
-    return null;
-  }
 
   try {
 
@@ -29,11 +22,88 @@ async function findAirport(code) {
       return null;
     }
 
-    return await response.json();
+    const raw = await response.json();
+
+    console.log("Airport API response:", raw);
+
+    // Handle different possible API response structures
+    let airport = raw;
+
+    if (Array.isArray(raw)) {
+      airport = raw[0];
+    }
+
+    if (raw.airport) {
+      airport = raw.airport;
+    }
+
+    if (raw.data) {
+      airport = Array.isArray(raw.data)
+        ? raw.data[0]
+        : raw.data;
+    }
+
+    if (!airport) {
+      return null;
+    }
+
+    // Normalize the data
+    return {
+      code:
+        airport.code ||
+        airport.icao_code ||
+        airport.icao ||
+        airport.ident ||
+        code,
+
+      iata:
+        airport.iata_code ||
+        airport.iata ||
+        "",
+
+      name:
+        airport.name ||
+        airport.airport_name ||
+        airport.nameAirport ||
+        "Unknown airport",
+
+      city:
+        airport.city ||
+        airport.municipality ||
+        airport.city_name ||
+        "",
+
+      country:
+        airport.country ||
+        airport.country_name ||
+        airport.nameCountry ||
+        "",
+
+      latitude: Number(
+        airport.latitude ??
+        airport.latitudeAirport ??
+        airport.lat
+      ),
+
+      longitude: Number(
+        airport.longitude ??
+        airport.longitudeAirport ??
+        airport.lon
+      ),
+
+      elevation:
+        airport.elevation ??
+        airport.elevation_ft ??
+        airport.altitude ??
+        null
+    };
 
   } catch (error) {
 
-    console.error("Airport lookup failed:", error);
+    console.error(
+      "Airport lookup failed:",
+      error
+    );
 
     return null;
   }
@@ -41,15 +111,32 @@ async function findAirport(code) {
 
 
 // ------------------------------------
-// Calculate great-circle distance
+// Great-circle distance
 // ------------------------------------
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
+function calculateDistance(
+  lat1,
+  lon1,
+  lat2,
+  lon2
+) {
+
+  if (
+    !Number.isFinite(lat1) ||
+    !Number.isFinite(lon1) ||
+    !Number.isFinite(lat2) ||
+    !Number.isFinite(lon2)
+  ) {
+    return null;
+  }
 
   const earthRadius = 3440.065;
 
-  const latitude1 = lat1 * Math.PI / 180;
-  const latitude2 = lat2 * Math.PI / 180;
+  const latitude1 =
+    lat1 * Math.PI / 180;
+
+  const latitude2 =
+    lat2 * Math.PI / 180;
 
   const deltaLatitude =
     (lat2 - lat1) * Math.PI / 180;
@@ -64,7 +151,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     Math.sin(deltaLongitude / 2) ** 2;
 
   const c =
-    2 * Math.atan2(
+    2 *
+    Math.atan2(
       Math.sqrt(a),
       Math.sqrt(1 - a)
     );
@@ -77,22 +165,40 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 // Display airport
 // ------------------------------------
 
-function displayAirport(airport, prefix) {
+function displayAirport(
+  airport,
+  prefix
+) {
 
   document.getElementById(
     `${prefix}Code`
   ).textContent =
-    airport.code || airport.icao_code || "----";
+    airport.code;
 
   document.getElementById(
     `${prefix}Name`
   ).textContent =
-    airport.name || "Unknown airport";
+    airport.name;
+
+  let location = "";
+
+  if (airport.city) {
+    location += airport.city;
+  }
+
+  if (airport.country) {
+
+    if (location) {
+      location += ", ";
+    }
+
+    location += airport.country;
+  }
 
   document.getElementById(
     `${prefix}Location`
   ).textContent =
-    `${airport.city || ""}${airport.country ? ", " + airport.country : ""}`;
+    location || "Location unavailable";
 }
 
 
@@ -119,7 +225,11 @@ async function planFlight() {
   const status =
     document.getElementById("status");
 
-  if (!departureCode || !destinationCode) {
+
+  if (
+    !departureCode ||
+    !destinationCode
+  ) {
 
     status.textContent =
       "Enter both departure and destination airports.";
@@ -129,20 +239,25 @@ async function planFlight() {
 
 
   status.textContent =
-    "Finding airports...";
+    "Looking up airports...";
 
 
-  const [departure, destination] =
-    await Promise.all([
-      findAirport(departureCode),
-      findAirport(destinationCode)
-    ]);
+  const [
+    departure,
+    destination
+  ] = await Promise.all([
+
+    findAirport(departureCode),
+
+    findAirport(destinationCode)
+
+  ]);
 
 
   if (!departure) {
 
     status.textContent =
-      `Departure airport ${departureCode} not found.`;
+      `Could not find ${departureCode}.`;
 
     return;
   }
@@ -151,15 +266,13 @@ async function planFlight() {
   if (!destination) {
 
     status.textContent =
-      `Destination airport ${destinationCode} not found.`;
+      `Could not find ${destinationCode}.`;
 
     return;
   }
 
 
-  departureAirport = departure;
-  destinationAirport = destination;
-
+  // Display airports
 
   displayAirport(
     departure,
@@ -172,32 +285,51 @@ async function planFlight() {
   );
 
 
-  const distance =
-    calculateDistance(
-      Number(departure.latitude),
-      Number(departure.longitude),
-      Number(destination.latitude),
-      Number(destination.longitude)
-    );
-
+  // Route codes
 
   document.getElementById(
     "routeDeparture"
   ).textContent =
-    departure.code || departure.icao_code;
+    departure.code;
 
 
   document.getElementById(
     "routeDestination"
   ).textContent =
-    destination.code || destination.icao_code;
+    destination.code;
 
 
-  document.getElementById(
-    "distance"
-  ).textContent =
-    `${Math.round(distance).toLocaleString()} NM`;
+  // Calculate distance
 
+  const distance =
+    calculateDistance(
+
+      departure.latitude,
+      departure.longitude,
+
+      destination.latitude,
+      destination.longitude
+
+    );
+
+
+  if (distance !== null) {
+
+    document.getElementById(
+      "distance"
+    ).textContent =
+      `${Math.round(distance).toLocaleString()} NM`;
+
+  } else {
+
+    document.getElementById(
+      "distance"
+    ).textContent =
+      "Unavailable";
+  }
+
+
+  // Show result
 
   document.getElementById(
     "result"
@@ -209,6 +341,12 @@ async function planFlight() {
     "Flight plan created successfully.";
 }
 
+
+// ------------------------------------
 // Application ready
-document.getElementById("status").textContent =
+// ------------------------------------
+
+document.getElementById(
+  "status"
+).textContent =
   "Airport lookup ready.";
