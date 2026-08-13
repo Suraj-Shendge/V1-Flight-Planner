@@ -1,5 +1,6 @@
 // V1 Flight Planner
 // Airport lookup + basic flight distance engine
+console.log("V1 Flight Planner app.js LOADED");
 
 const AIRPORT_API = "https://airportsapi.com/api/airports";
 
