@@ -472,6 +472,88 @@
 
 
     /* =====================================================
+       NAVIGATION / PROCEDURE BUILDER
+       ===================================================== */
+
+    .procedure-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .procedure-box {
+      background: #0b1220;
+      border: 1px solid #26344d;
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .procedure-box h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .procedure-status {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #0b1220;
+      border: 1px solid #26344d;
+      color: #8fa4c4;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .procedure-status.good {
+      color: #70d394;
+      border-color: #2b6343;
+    }
+
+    .procedure-status.warning {
+      color: #d8c77a;
+      border-color: #5a4b1d;
+    }
+
+    .airport-preview {
+      margin-top: 15px;
+      padding: 15px;
+      border: 1px solid #26344d;
+      border-radius: 10px;
+      background: #0b1220;
+    }
+
+    .airport-preview-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .airport-preview-meta {
+      color: #8fa4c4;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .nav-route-summary {
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #0b1220;
+      border: 1px solid #26344d;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .aircraft-count {
+      color: #7187a8;
+      font-size: 12px;
+      margin-top: 7px;
+    }
+
+
+    /* =====================================================
        RESPONSIVE
        ===================================================== */
 
@@ -620,6 +702,107 @@
 
 
   <!-- =====================================================
+       NAVIGATION / PROCEDURE BUILDER
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      🧭 Departure & Arrival Procedures
+    </h2>
+
+    <div class="procedure-grid">
+
+      <div class="procedure-box">
+        <h3>🛫 Departure</h3>
+
+        <label for="departureRunway">Runway</label>
+        <select id="departureRunway">
+          <option value="">Enter departure airport first</option>
+        </select>
+
+        <label for="departureSID" style="margin-top:12px;">SID</label>
+        <select id="departureSID">
+          <option value="">No procedure database loaded</option>
+        </select>
+
+        <div class="airport-preview" id="departurePreview">
+          <div class="airport-preview-title">Departure preview</div>
+          <div class="airport-preview-meta" id="departurePreviewMeta">
+            Enter an airport to preview its runway layout.
+          </div>
+        </div>
+      </div>
+
+
+      <div class="procedure-box">
+        <h3>🛬 Arrival</h3>
+
+        <label for="arrivalSTAR">STAR</label>
+        <select id="arrivalSTAR">
+          <option value="">No procedure database loaded</option>
+        </select>
+
+        <label for="arrivalApproach" style="margin-top:12px;">Approach</label>
+        <select id="arrivalApproach">
+          <option value="">No procedure database loaded</option>
+        </select>
+
+        <label for="arrivalRunway" style="margin-top:12px;">Runway</label>
+        <select id="arrivalRunway">
+          <option value="">Enter destination airport first</option>
+        </select>
+
+        <div class="airport-preview" id="arrivalPreview">
+          <div class="airport-preview-title">Arrival preview</div>
+          <div class="airport-preview-meta" id="arrivalPreviewMeta">
+            Enter a destination to preview its runway layout.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="procedure-box" style="margin-top:15px;">
+      <h3>Navigation Data</h3>
+
+      <div class="hint">
+        Runway data is loaded from the Flight Plan Database simulator-navigation API.
+        SIDs, STARs and approaches are only displayed when a compatible V1 navigation
+        database is loaded; V1 will never invent a published procedure.
+      </div>
+
+      <input
+        id="navdataFile"
+        type="file"
+        accept="application/json,.json"
+        style="margin-top:12px;"
+      >
+
+      <div
+        class="procedure-status warning"
+        id="navdataStatus"
+      >
+        No local procedure database loaded. Runway data is available independently.
+      </div>
+    </div>
+
+    <div class="nav-route-summary" id="procedureRouteSummary">
+      V1 route: departure → en-route → arrival
+    </div>
+
+    <button
+      type="button"
+      class="secondary"
+      onclick="previewProcedures()"
+    >
+      PREVIEW PROCEDURES ON GLOBE
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
        AIRCRAFT
        ===================================================== -->
 
@@ -638,16 +821,11 @@
           Aircraft
         </label>
 
-        <select id="aircraft">
-          <option value="a320">Airbus A320-200</option>
-          <option value="a320neo">Airbus A320neo</option>
-          <option value="a321">Airbus A321</option>
-          <option value="b738">Boeing 737-800</option>
-          <option value="b38m">Boeing 737 MAX 8</option>
-          <option value="b789">Boeing 787-9</option>
-          <option value="b77w">Boeing 777-300ER</option>
-          <option value="a359">Airbus A350-900</option>
-        </select>
+        <select id="aircraft" aria-label="Aircraft selection"></select>
+
+        <div class="aircraft-count" id="aircraftCount">
+          Loading aircraft catalog...
+        </div>
 
       </div>
 
@@ -775,6 +953,14 @@
       onclick="updateRoute()"
     >
       UPDATE ROUTE
+    </button>
+
+    <button
+      type="button"
+      class="secondary"
+      onclick="findRealSimRoute()"
+    >
+      FIND REAL SIM ROUTE
     </button>
 
   </div>
