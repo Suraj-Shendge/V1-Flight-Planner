@@ -1,23 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>V1 Flight Planner</title>
 
-  <!-- CesiumJS 3D Globe -->
+
+  <!-- =====================================================
+       CESIUMJS 3D GLOBE
+       ===================================================== -->
+
   <link
     href="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Widgets/widgets.css"
     rel="stylesheet"
   >
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js"></script>
+
+  <script
+    src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js">
+  </script>
+
 
   <style>
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
 
     body {
       font-family: Arial, sans-serif;
@@ -26,15 +42,18 @@
       min-height: 100vh;
     }
 
+
     header {
       padding: 20px;
       background: #111c30;
       border-bottom: 1px solid #26344d;
     }
 
+
     header h1 {
       font-size: 24px;
     }
+
 
     header p {
       color: #8fa4c4;
@@ -42,11 +61,13 @@
       font-size: 14px;
     }
 
+
     main {
       padding: 20px;
       max-width: 1200px;
       margin: auto;
     }
+
 
     .card,
     .globe-card {
@@ -57,17 +78,39 @@
       margin-bottom: 20px;
     }
 
+
     .card h2,
     .globe-card h2 {
       margin-bottom: 16px;
       font-size: 18px;
     }
 
+
+    .section-title {
+      margin-bottom: 16px;
+    }
+
+
     .inputs {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 15px;
     }
+
+
+    .three-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+
+    .four-inputs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
 
     label {
       display: block;
@@ -76,20 +119,30 @@
       margin-bottom: 7px;
     }
 
-    input {
+
+    input,
+    select {
       width: 100%;
       padding: 13px;
       border-radius: 8px;
       border: 1px solid #34435e;
       background: #0b1220;
       color: white;
-      font-size: 16px;
+      font-size: 15px;
       outline: none;
     }
 
-    input:focus {
+
+    input:focus,
+    select:focus {
       border-color: #2675ff;
     }
+
+
+    select {
+      cursor: pointer;
+    }
+
 
     button {
       width: 100%;
@@ -104,13 +157,40 @@
       cursor: pointer;
     }
 
+
     button:hover {
       background: #3681ff;
     }
 
+
     button:active {
       transform: translateY(1px);
     }
+
+
+    button.secondary {
+      background: #263b5d;
+    }
+
+
+    button.secondary:hover {
+      background: #304b73;
+    }
+
+
+    button.danger {
+      background: #8e3040;
+      margin-top: 0;
+      padding: 8px 12px;
+      width: auto;
+      font-size: 13px;
+    }
+
+
+    button.danger:hover {
+      background: #aa394c;
+    }
+
 
     .status {
       margin-top: 15px;
@@ -118,10 +198,24 @@
       font-size: 13px;
     }
 
+
+    .hint {
+      color: #7187a8;
+      font-size: 12px;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       FLIGHT RESULT
+       ===================================================== */
+
     #result {
       display: none;
       margin-top: 20px;
     }
+
 
     .airport {
       background: #0b1220;
@@ -132,20 +226,24 @@
       line-height: 1.6;
     }
 
+
     .airport-code {
       font-size: 22px;
       font-weight: bold;
     }
+
 
     .airport-name {
       font-size: 15px;
       margin-top: 3px;
     }
 
+
     .airport-location {
       color: #8fa4c4;
       font-size: 13px;
     }
+
 
     .route {
       display: flex;
@@ -154,16 +252,23 @@
       margin-top: 15px;
     }
 
+
     .route-code {
       font-size: 20px;
       font-weight: bold;
     }
+
 
     .route-line {
       flex: 1;
       height: 2px;
       background: #2675ff;
     }
+
+
+    /* =====================================================
+       GLOBE
+       ===================================================== */
 
     .globe-header {
       display: flex;
@@ -173,15 +278,18 @@
       margin-bottom: 15px;
     }
 
+
     .globe-header h2 {
       margin: 0;
     }
+
 
     .globe-status {
       color: #8fa4c4;
       font-size: 13px;
       text-align: right;
     }
+
 
     #cesiumContainer {
       width: 100%;
@@ -192,6 +300,133 @@
       position: relative;
     }
 
+
+    /* =====================================================
+       WAYPOINT TABLE
+       ===================================================== */
+
+    .waypoint-table-wrapper {
+      overflow-x: auto;
+    }
+
+
+    .waypoint-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+
+    .waypoint-table th {
+      text-align: left;
+      color: #8fa4c4;
+      font-size: 12px;
+      font-weight: normal;
+      padding: 10px;
+      border-bottom: 1px solid #26344d;
+    }
+
+
+    .waypoint-table td {
+      padding: 8px;
+      border-bottom: 1px solid #1e2b42;
+      vertical-align: middle;
+    }
+
+
+    .waypoint-table input,
+    .waypoint-table select {
+      padding: 9px;
+      font-size: 13px;
+    }
+
+
+    .waypoint-number {
+      color: #8fa4c4;
+      font-weight: bold;
+      width: 40px;
+    }
+
+
+    .waypoint-distance {
+      color: #8fa4c4;
+      white-space: nowrap;
+    }
+
+
+    .empty-route {
+      color: #7187a8;
+      padding: 15px 0;
+      font-size: 13px;
+    }
+
+
+    /* =====================================================
+       PERFORMANCE
+       ===================================================== */
+
+    .performance-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+
+    .performance-box {
+      background: #0b1220;
+      border: 1px solid #26344d;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+
+    .performance-box h3 {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+
+    .performance-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 9px 0;
+      border-bottom: 1px solid #1e2b42;
+    }
+
+
+    .performance-row:last-child {
+      border-bottom: none;
+    }
+
+
+    .performance-label {
+      color: #8fa4c4;
+    }
+
+
+    .performance-value {
+      font-weight: bold;
+      text-align: right;
+    }
+
+
+    .estimate-warning {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #302a15;
+      border: 1px solid #5a4b1d;
+      color: #d8c77a;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       INFO ROW
+       ===================================================== */
+
     .info-row {
       display: flex;
       justify-content: space-between;
@@ -200,20 +435,62 @@
       border-bottom: 1px solid #26344d;
     }
 
+
     .info-row:last-child {
       border-bottom: none;
     }
 
+
     .info-label {
       color: #8fa4c4;
     }
+
 
     .info-value {
       font-weight: bold;
       text-align: right;
     }
 
+
+    /* =====================================================
+       STATUS COLORS
+       ===================================================== */
+
+    .status-good {
+      color: #70d394;
+    }
+
+
+    .status-warning {
+      color: #d8c77a;
+    }
+
+
+    .status-danger {
+      color: #ff7587;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 850px) {
+
+      .three-inputs,
+      .four-inputs {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .performance-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+
     @media (max-width: 700px) {
+
       .inputs {
         grid-template-columns: 1fr;
       }
@@ -234,135 +511,868 @@
       #cesiumContainer {
         height: 430px;
       }
+
     }
 
+
     @media (max-width: 600px) {
+
+      .three-inputs,
+      .four-inputs {
+        grid-template-columns: 1fr;
+      }
+
       .route-code {
         font-size: 17px;
       }
+
     }
+
   </style>
 </head>
 
+
 <body>
-  <header>
-    <h1>✈️ V1 Flight Planner</h1>
-    <p>Free flight planning system</p>
-  </header>
 
-  <main>
-    <!-- Flight Setup -->
-    <div class="card">
-      <h2>Flight Setup</h2>
 
-      <div class="inputs">
-        <div>
-          <label for="departure">Departure ICAO</label>
-          <input
-            id="departure"
-            type="text"
-            maxlength="4"
-            placeholder="VABB"
-            autocomplete="off"
+<header>
+
+  <h1>
+    ✈️ V1 Flight Planner
+  </h1>
+
+  <p>
+    Free flight planning system
+  </p>
+
+</header>
+
+
+<main>
+
+
+  <!-- =====================================================
+       FLIGHT SETUP
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Flight Setup
+    </h2>
+
+
+    <div class="inputs">
+
+      <div>
+
+        <label for="departure">
+          Departure ICAO
+        </label>
+
+        <input
+          id="departure"
+          type="text"
+          maxlength="4"
+          placeholder="VABB"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label for="destination">
+          Destination ICAO
+        </label>
+
+        <input
+          id="destination"
+          type="text"
+          maxlength="4"
+          placeholder="VIDP"
+          autocomplete="off"
+        >
+
+      </div>
+
+    </div>
+
+
+    <button
+      type="button"
+      onclick="planFlight()"
+    >
+      PLAN FLIGHT
+    </button>
+
+
+    <div
+      class="status"
+      id="status"
+      aria-live="polite"
+    >
+      Airport lookup ready.
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       AIRCRAFT
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Aircraft & Weight
+    </h2>
+
+
+    <div class="three-inputs">
+
+      <div>
+
+        <label for="aircraft">
+          Aircraft
+        </label>
+
+        <select id="aircraft">
+          <option value="a320">Airbus A320-200</option>
+          <option value="a320neo">Airbus A320neo</option>
+          <option value="a321">Airbus A321</option>
+          <option value="b738">Boeing 737-800</option>
+          <option value="b38m">Boeing 737 MAX 8</option>
+          <option value="b789">Boeing 787-9</option>
+          <option value="b77w">Boeing 777-300ER</option>
+          <option value="a359">Airbus A350-900</option>
+        </select>
+
+      </div>
+
+
+      <div>
+
+        <label for="payload">
+          Payload (kg)
+        </label>
+
+        <input
+          id="payload"
+          type="number"
+          min="0"
+          step="100"
+          value="12000"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label for="fuelLoad">
+          Fuel Load (kg)
+        </label>
+
+        <input
+          id="fuelLoad"
+          type="number"
+          min="0"
+          step="100"
+          value="12000"
+        >
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="hint"
+      id="aircraftHint"
+    >
+      Select an aircraft to see its weight and performance limits.
+    </div>
+
+
+    <button
+      type="button"
+      onclick="calculatePerformance()"
+    >
+      CALCULATE PERFORMANCE
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       ROUTE EDITOR
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Route Editor
+    </h2>
+
+
+    <div class="waypoint-table-wrapper">
+
+      <table class="waypoint-table">
+
+        <thead>
+
+          <tr>
+
+            <th>#</th>
+
+            <th>Waypoint ICAO</th>
+
+            <th>Altitude</th>
+
+            <th>Speed</th>
+
+            <th>Unit</th>
+
+            <th>Leg Distance</th>
+
+            <th></th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="waypointTableBody">
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <div
+      class="empty-route"
+      id="emptyRoute"
+    >
+      Enter departure and destination, then add waypoints here.
+    </div>
+
+
+    <button
+      type="button"
+      class="secondary"
+      onclick="addWaypoint()"
+    >
+      + ADD WAYPOINT
+    </button>
+
+
+    <button
+      type="button"
+      onclick="updateRoute()"
+    >
+      UPDATE ROUTE
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       FLIGHT RESULT
+       ===================================================== -->
+
+  <div
+    class="card"
+    id="result"
+  >
+
+    <h2>
+      Flight
+    </h2>
+
+
+    <div class="route">
+
+      <span
+        class="route-code"
+        id="routeDeparture"
+      >
+        ---
+      </span>
+
+
+      <div class="route-line"></div>
+
+
+      <span
+        class="route-code"
+        id="routeDestination"
+      >
+        ---
+      </span>
+
+    </div>
+
+
+    <h2 style="margin-top:25px;">
+      Departure
+    </h2>
+
+
+    <div class="airport">
+
+      <div
+        class="airport-code"
+        id="depCode"
+      >
+        ---
+      </div>
+
+
+      <div
+        class="airport-name"
+        id="depName"
+      >
+        ---
+      </div>
+
+
+      <div
+        class="airport-location"
+        id="depLocation"
+      >
+        ---
+      </div>
+
+    </div>
+
+
+    <h2 style="margin-top:25px;">
+      Destination
+    </h2>
+
+
+    <div class="airport">
+
+      <div
+        class="airport-code"
+        id="destCode"
+      >
+        ---
+      </div>
+
+
+      <div
+        class="airport-name"
+        id="destName"
+      >
+        ---
+      </div>
+
+
+      <div
+        class="airport-location"
+        id="destLocation"
+      >
+        ---
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       3D GLOBE
+       ===================================================== -->
+
+  <div class="globe-card">
+
+    <div class="globe-header">
+
+      <h2>
+        🌍 3D Flight View
+      </h2>
+
+
+      <div
+        class="globe-status"
+        id="globeStatus"
+      >
+        Enter airports to display the route
+      </div>
+
+    </div>
+
+
+    <div
+      id="cesiumContainer"
+    ></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       PERFORMANCE RESULT
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Aircraft Performance
+    </h2>
+
+
+    <div class="performance-grid">
+
+
+      <!-- WEIGHTS -->
+
+      <div class="performance-box">
+
+        <h3>
+          ⚖️ Weight
+        </h3>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            OEW
+          </span>
+
+          <span
+            class="performance-value"
+            id="oew"
           >
+            —
+          </span>
+
         </div>
 
-        <div>
-          <label for="destination">Destination ICAO</label>
-          <input
-            id="destination"
-            type="text"
-            maxlength="4"
-            placeholder="VIDP"
-            autocomplete="off"
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Payload
+          </span>
+
+          <span
+            class="performance-value"
+            id="payloadDisplay"
           >
+            —
+          </span>
+
         </div>
-      </div>
 
-      <button type="button" onclick="planFlight()">
-        PLAN FLIGHT
-      </button>
 
-      <div class="status" id="status" aria-live="polite">
-        Airport lookup ready.
-      </div>
-    </div>
+        <div class="performance-row">
 
-    <!-- Flight Result -->
-    <div class="card" id="result">
-      <h2>Flight</h2>
+          <span class="performance-label">
+            ZFW
+          </span>
 
-      <div class="route">
-        <span class="route-code" id="routeDeparture">---</span>
-        <div class="route-line"></div>
-        <span class="route-code" id="routeDestination">---</span>
-      </div>
+          <span
+            class="performance-value"
+            id="zfw"
+          >
+            —
+          </span>
 
-      <h2 style="margin-top:25px;">Departure</h2>
-
-      <div class="airport">
-        <div class="airport-code" id="depCode">---</div>
-        <div class="airport-name" id="depName">---</div>
-        <div class="airport-location" id="depLocation">---</div>
-      </div>
-
-      <h2 style="margin-top:25px;">Destination</h2>
-
-      <div class="airport">
-        <div class="airport-code" id="destCode">---</div>
-        <div class="airport-name" id="destName">---</div>
-        <div class="airport-location" id="destLocation">---</div>
-      </div>
-    </div>
-
-    <!-- 3D Flight Globe -->
-    <div class="globe-card">
-      <div class="globe-header">
-        <h2>🌍 3D Flight View</h2>
-        <div class="globe-status" id="globeStatus">
-          Enter airports to display the route
         </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Fuel
+          </span>
+
+          <span
+            class="performance-value"
+            id="fuelDisplay"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Takeoff Weight
+          </span>
+
+          <span
+            class="performance-value"
+            id="tow"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Estimated Landing Weight
+          </span>
+
+          <span
+            class="performance-value"
+            id="landingWeight"
+          >
+            —
+          </span>
+
+        </div>
+
       </div>
 
-      <div id="cesiumContainer"></div>
+
+      <!-- TAKEOFF -->
+
+      <div class="performance-box">
+
+        <h3>
+          🛫 Takeoff
+        </h3>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Flaps
+          </span>
+
+          <span
+            class="performance-value"
+            id="takeoffFlaps"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            V1
+          </span>
+
+          <span
+            class="performance-value"
+            id="v1"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            VR
+          </span>
+
+          <span
+            class="performance-value"
+            id="vr"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            V2
+          </span>
+
+          <span
+            class="performance-value"
+            id="v2"
+          >
+            —
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- LANDING -->
+
+      <div class="performance-box">
+
+        <h3>
+          🛬 Landing
+        </h3>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Flaps
+          </span>
+
+          <span
+            class="performance-value"
+            id="landingFlaps"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            VREF
+          </span>
+
+          <span
+            class="performance-value"
+            id="vref"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            VAPP
+          </span>
+
+          <span
+            class="performance-value"
+            id="vapp"
+          >
+            —
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- LIMITS -->
+
+      <div class="performance-box">
+
+        <h3>
+          📊 Aircraft Limits
+        </h3>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            MTOW
+          </span>
+
+          <span
+            class="performance-value"
+            id="mtow"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            MLW
+          </span>
+
+          <span
+            class="performance-value"
+            id="mlw"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            MZFW
+          </span>
+
+          <span
+            class="performance-value"
+            id="mzfw"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="performance-row">
+
+          <span class="performance-label">
+            Max Fuel
+          </span>
+
+          <span
+            class="performance-value"
+            id="maxFuel"
+          >
+            —
+          </span>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <!-- Flight Information -->
-    <div class="card">
-      <h2>Flight Information</h2>
 
-      <div class="info-row">
-        <span class="info-label">Distance</span>
-        <span class="info-value" id="distance">—</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Initial True Bearing</span>
-        <span class="info-value" id="initialBearing">—</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Final True Bearing</span>
-        <span class="info-value" id="finalBearing">—</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Route Points</span>
-        <span class="info-value" id="routePoints">—</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Estimated Time</span>
-        <span class="info-value">—</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Fuel</span>
-        <span class="info-value">—</span>
-      </div>
+    <div
+      class="estimate-warning"
+    >
+      ⚠️ SIMULATION ESTIMATE: takeoff and landing speeds shown here are
+      simplified simulator estimates based on the selected aircraft profile
+      and calculated weight. They are NOT certified operational performance
+      data. We will replace this model with aircraft-specific performance
+      datasets as the planner develops.
     </div>
-  </main>
 
-  <script src="app.js"></script>
+  </div>
+
+
+  <!-- =====================================================
+       FLIGHT INFORMATION
+       ===================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Flight Information
+    </h2>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Distance
+      </span>
+
+      <span
+        class="info-value"
+        id="distance"
+      >
+        —
+      </span>
+
+    </div>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Initial True Bearing
+      </span>
+
+      <span
+        class="info-value"
+        id="initialBearing"
+      >
+        —
+      </span>
+
+    </div>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Final True Bearing
+      </span>
+
+      <span
+        class="info-value"
+        id="finalBearing"
+      >
+        —
+      </span>
+
+    </div>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Route Points
+      </span>
+
+      <span
+        class="info-value"
+        id="routePoints"
+      >
+        —
+      </span>
+
+    </div>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Estimated Time
+      </span>
+
+      <span
+        class="info-value"
+        id="estimatedTime"
+      >
+        —
+      </span>
+
+    </div>
+
+
+    <div class="info-row">
+
+      <span class="info-label">
+        Fuel
+      </span>
+
+      <span
+        class="info-value"
+        id="fuel"
+      >
+        —
+      </span>
+
+    </div>
+
+  </div>
+
+
+</main>
+
+
+<script src="app.js"></script>
+
 </body>
 </html>
