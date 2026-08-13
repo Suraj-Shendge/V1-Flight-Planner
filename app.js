@@ -1,245 +1,210 @@
 // V1 Flight Planner
-// Airport database powered by OurAirports open data
+// Lightweight airport lookup
 
-const AIRPORTS_URL =
-  "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv";
+const AIRPORT_API = "https://airportsapi.com/api/airports";
 
-let airports = [];
-let airportsLoaded = false;
+let departureAirport = null;
+let destinationAirport = null;
 
-// -----------------------------
-// CSV parser
-// -----------------------------
 
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let insideQuotes = false;
+// ------------------------------------
+// Find airport
+// ------------------------------------
 
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const next = text[i + 1];
+async function findAirport(code) {
 
-    if (char === '"' && insideQuotes && next === '"') {
-      value += '"';
-      i++;
-    } else if (char === '"') {
-      insideQuotes = !insideQuotes;
-    } else if (char === "," && !insideQuotes) {
-      row.push(value);
-      value = "";
-    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
-      if (char === "\r" && next === "\n") {
-        i++;
-      }
+  code = code.trim().toUpperCase();
 
-      row.push(value);
-      rows.push(row);
-
-      row = [];
-      value = "";
-    } else {
-      value += char;
-    }
+  if (!code) {
+    return null;
   }
-
-  if (value.length > 0 || row.length > 0) {
-    row.push(value);
-    rows.push(row);
-  }
-
-  const headers = rows.shift();
-
-  return rows.map(columns => {
-    const airport = {};
-
-    headers.forEach((header, index) => {
-      airport[header] = columns[index] || "";
-    });
-
-    return airport;
-  });
-}
-
-// -----------------------------
-// Load airport database
-// -----------------------------
-
-async function loadAirports() {
 
   try {
 
-    console.log("Loading airport database...");
-
-    const response = await fetch(AIRPORTS_URL);
+    const response = await fetch(
+      `${AIRPORT_API}/${encodeURIComponent(code)}`
+    );
 
     if (!response.ok) {
-      throw new Error("Could not download airport database.");
+      return null;
     }
 
-    const csv = await response.text();
-
-    airports = parseCSV(csv);
-
-    // Keep airports that have an ICAO-style identifier
-    airports = airports.filter(
-      airport =>
-        airport.ident &&
-        airport.ident.length === 4
-    );
-
-    airportsLoaded = true;
-
-    console.log(
-      `Loaded ${airports.length.toLocaleString()} airports.`
-    );
+    return await response.json();
 
   } catch (error) {
 
-    console.error(error);
+    console.error("Airport lookup failed:", error);
 
-    alert(
-      "Unable to load the airport database. Please refresh the page."
+    return null;
+  }
+}
+
+
+// ------------------------------------
+// Calculate great-circle distance
+// ------------------------------------
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+
+  const earthRadius = 3440.065;
+
+  const latitude1 = lat1 * Math.PI / 180;
+  const latitude2 = lat2 * Math.PI / 180;
+
+  const deltaLatitude =
+    (lat2 - lat1) * Math.PI / 180;
+
+  const deltaLongitude =
+    (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(latitude1) *
+    Math.cos(latitude2) *
+    Math.sin(deltaLongitude / 2) ** 2;
+
+  const c =
+    2 * Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
     );
-  }
+
+  return earthRadius * c;
 }
 
-// -----------------------------
-// Airport search
-// -----------------------------
 
-function searchAirport(query) {
+// ------------------------------------
+// Display airport
+// ------------------------------------
 
-  if (!airportsLoaded) {
-    return [];
-  }
+function displayAirport(airport, prefix) {
 
-  query = query.trim().toUpperCase();
+  document.getElementById(
+    `${prefix}Code`
+  ).textContent =
+    airport.code || airport.icao_code || "----";
 
-  if (!query) {
-    return [];
-  }
+  document.getElementById(
+    `${prefix}Name`
+  ).textContent =
+    airport.name || "Unknown airport";
 
-  return airports
-    .filter(airport => {
-
-      const ident =
-        (airport.ident || "").toUpperCase();
-
-      const name =
-        (airport.name || "").toUpperCase();
-
-      const municipality =
-        (airport.municipality || "").toUpperCase();
-
-      return (
-        ident.includes(query) ||
-        name.includes(query) ||
-        municipality.includes(query)
-      );
-
-    })
-    .slice(0, 10);
+  document.getElementById(
+    `${prefix}Location`
+  ).textContent =
+    `${airport.city || ""}${airport.country ? ", " + airport.country : ""}`;
 }
 
-// -----------------------------
-// Display airport information
-// -----------------------------
 
-function displayAirport(airport, target) {
+// ------------------------------------
+// Plan flight
+// ------------------------------------
 
-  const element =
-    document.getElementById(target);
+async function planFlight() {
 
-  if (!element) {
-    return;
-  }
-
-  element.innerHTML = `
-    <strong>${airport.ident}</strong><br>
-    ${airport.name}<br>
-    ${airport.municipality || "Unknown location"},
-    ${airport.iso_country || ""}
-  `;
-}
-
-// -----------------------------
-// Flight planning
-// -----------------------------
-
-function planFlight() {
-
-  const departure =
+  const departureCode =
     document
       .getElementById("departure")
       .value
       .trim()
       .toUpperCase();
 
-  const destination =
+  const destinationCode =
     document
       .getElementById("destination")
       .value
       .trim()
       .toUpperCase();
 
-  if (!departure || !destination) {
+  const status =
+    document.getElementById("status");
 
-    alert(
-      "Please enter both departure and destination airports."
-    );
+  if (!departureCode || !destinationCode) {
 
-    return;
-  }
-
-  const depAirport =
-    airports.find(
-      airport =>
-        airport.ident.toUpperCase() === departure
-    );
-
-  const destAirport =
-    airports.find(
-      airport =>
-        airport.ident.toUpperCase() === destination
-    );
-
-  if (!depAirport) {
-
-    alert(
-      `Departure airport ${departure} was not found.`
-    );
+    status.textContent =
+      "Enter both departure and destination airports.";
 
     return;
   }
 
-  if (!destAirport) {
 
-    alert(
-      `Destination airport ${destination} was not found.`
-    );
+  status.textContent =
+    "Finding airports...";
+
+
+  const [departure, destination] =
+    await Promise.all([
+      findAirport(departureCode),
+      findAirport(destinationCode)
+    ]);
+
+
+  if (!departure) {
+
+    status.textContent =
+      `Departure airport ${departureCode} not found.`;
 
     return;
   }
+
+
+  if (!destination) {
+
+    status.textContent =
+      `Destination airport ${destinationCode} not found.`;
+
+    return;
+  }
+
+
+  departureAirport = departure;
+  destinationAirport = destination;
+
 
   displayAirport(
-    depAirport,
-    "depResult"
+    departure,
+    "dep"
   );
 
   displayAirport(
-    destAirport,
-    "destResult"
+    destination,
+    "dest"
   );
 
-  document
-    .getElementById("result")
-    .style.display = "block";
+
+  const distance =
+    calculateDistance(
+      Number(departure.latitude),
+      Number(departure.longitude),
+      Number(destination.latitude),
+      Number(destination.longitude)
+    );
+
+
+  document.getElementById(
+    "routeDeparture"
+  ).textContent =
+    departure.code || departure.icao_code;
+
+
+  document.getElementById(
+    "routeDestination"
+  ).textContent =
+    destination.code || destination.icao_code;
+
+
+  document.getElementById(
+    "distance"
+  ).textContent =
+    `${Math.round(distance).toLocaleString()} NM`;
+
+
+  document.getElementById(
+    "result"
+  ).style.display =
+    "block";
+
+
+  status.textContent =
+    "Flight plan created successfully.";
 }
-
-// -----------------------------
-// Start application
-// -----------------------------
-
-loadAirports();
